@@ -20,7 +20,7 @@ func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, "Failed to read request body", http.StatusTemporaryRedirect)
+			http.Error(w, "Failed to read request body", http.StatusCreated)
 			return
 		}
 
@@ -42,7 +42,7 @@ func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("Location", originalURL)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusTemporaryRedirect)
 		fmt.Fprint(w, originalURL)
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
