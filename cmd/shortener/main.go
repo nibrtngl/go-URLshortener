@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 )
@@ -18,7 +18,7 @@ func main() {
 
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Failed to read request body", http.StatusTemporaryRedirect)
 			return
