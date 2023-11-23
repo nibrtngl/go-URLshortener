@@ -16,6 +16,7 @@ func Test_shortenURLHandler(t *testing.T) {
 		path         string
 		expectedCode int
 		URL          string
+		Header       string
 	}
 
 	app := fiber.New()
@@ -23,6 +24,8 @@ func Test_shortenURLHandler(t *testing.T) {
 	urlMapping := make(map[string]string)
 
 	app.Post("/", func(c *fiber.Ctx) error {
+		c.GetRespHeader("Content-Type")
+
 		originalURL := string(c.Body())
 		id := generateShortID()
 		urlMapping[id] = originalURL
@@ -37,6 +40,7 @@ func Test_shortenURLHandler(t *testing.T) {
 			path:         "/",
 			expectedCode: http.StatusCreated,
 			URL:          "https://example.com",
+			Header:       "text/plain; charset=utf-8",
 		},
 	}
 
@@ -48,6 +52,7 @@ func Test_shortenURLHandler(t *testing.T) {
 			log.Println(err)
 			continue
 		}
+		assert.Equalf(t, test.Header, resp.Header.Get("Content-Type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
 		err = resp.Body.Close()
 		if err != nil {
@@ -62,6 +67,7 @@ func Test_redirectToOriginalURL(t *testing.T) {
 		path         string
 		expectedCode int
 		URL          string
+		Header       string
 	}
 
 	app := fiber.New()
@@ -69,6 +75,7 @@ func Test_redirectToOriginalURL(t *testing.T) {
 	urlMapping := make(map[string]string)
 
 	app.Post("/", func(c *fiber.Ctx) error {
+		c.GetRespHeader("Content-Type")
 		originalURL := string(c.Body())
 		id := generateShortID()
 		urlMapping[id] = originalURL
@@ -83,6 +90,7 @@ func Test_redirectToOriginalURL(t *testing.T) {
 			path:         "/",
 			expectedCode: http.StatusTemporaryRedirect,
 			URL:          "https://example.com",
+			Header:       "text/plain; charset=utf-8",
 		},
 	}
 
@@ -94,6 +102,7 @@ func Test_redirectToOriginalURL(t *testing.T) {
 			log.Println(err)
 			continue
 		}
+		assert.Equal(t, test.Header, resp.Header.Get("Content-Type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
 		err = resp.Body.Close()
 		if err != nil {

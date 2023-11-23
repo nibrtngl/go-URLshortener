@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"math/rand"
+	"net/http"
 )
 
 var urlMapping map[string]string
@@ -25,18 +26,24 @@ func shortenURLHandler(c *fiber.Ctx) error {
 	urlMapping[id] = originalURL
 
 	shortURL := fmt.Sprintf("http://localhost:8080/%s", id)
-	return c.Status(fiber.StatusCreated).SendString(shortURL)
+
+	// Установка заголовка Location с оригинальным URL
+	c.Set("Location", originalURL)
+
+	return c.Status(http.StatusCreated).SendString(shortURL)
 }
 
 func redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
 	originalURL, exists := urlMapping[id]
 	if !exists {
-		return c.Status(fiber.StatusBadRequest).SendString("Bad Request")
+		return c.Status(http.StatusBadRequest).SendString("Bad Request")
 	}
 
-	response := fmt.Sprintf(originalURL)
-	return c.Status(fiber.StatusTemporaryRedirect).SendString(response)
+	// Установка заголовка Location с оригинальным URL
+	c.Set("Location", originalURL)
+
+	return c.Status(http.StatusTemporaryRedirect).SendString("")
 }
 
 func generateShortID() string {
