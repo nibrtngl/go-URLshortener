@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
@@ -10,103 +9,105 @@ import (
 	"testing"
 )
 
-func Test_shortenURLHandler(t *testing.T) {
-	type set struct {
+func TestShortenURLHandler(t *testing.T) {
+
+	server := NewServer()
+	server.app.Post("/", server.shortenURLHandler)
+
+	tests := []struct {
 		name         string
 		path         string
 		expectedCode int
 		URL          string
 		Header       string
-	}
-
-	app := fiber.New()
-
-	urlMapping := make(map[string]string)
-
-	app.Post("/", func(c *fiber.Ctx) error {
-		c.GetRespHeader("Content-Type")
-
-		originalURL := string(c.Body())
-		id := generateShortID()
-		urlMapping[id] = originalURL
-
-		shortURL := "http://localhost:8080/" + id
-		return c.Status(fiber.StatusCreated).SendString(shortURL)
-	})
-
-	tests := []set{
+	}{
 		{
 			name:         "get HTTP status 201",
 			path:         "/",
 			expectedCode: http.StatusCreated,
 			URL:          "https://example.com",
-			Header:       "text/plain; charset=utf-8",
+		},
+		{
+			name:         "get invalid URL",
+			path:         "/",
+			expectedCode: http.StatusBadRequest,
+			URL:          "!_@O",
+		},
+		{
+			name:         "get invalid path",
+			path:         "/invalid_path123",
+			expectedCode: http.StatusNotFound,
+			URL:          "https://example.com",
 		},
 	}
 
 	for _, test := range tests {
-		a := bytes.NewBuffer([]byte(test.URL))
-		req := httptest.NewRequest(http.MethodPost, test.path, a)
-		resp, err := app.Test(req, -1)
+		b := bytes.NewBuffer([]byte(test.URL))
+		req := httptest.NewRequest(http.MethodPost, test.path, b)
+
+		resp, err := server.app.Test(req, -1)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		assert.Equalf(t, test.Header, resp.Header.Get("Content-Type"), test.name)
+		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
+
 		err = resp.Body.Close()
-		if err != nil {
-			log.Println(err.Error())
-		}
 	}
 }
+func TestRedirectToOriginalURL(t *testing.T) {
 
-func Test_redirectToOriginalURL(t *testing.T) {
-	type set struct {
+	server := NewServer()
+	server.app.Get("/:id", server.redirectToOriginalURL)
+
+	tests := []struct {
 		name         string
 		path         string
+		id           string
 		expectedCode int
 		URL          string
 		Header       string
-	}
-
-	app := fiber.New()
-
-	urlMapping := make(map[string]string)
-
-	app.Post("/", func(c *fiber.Ctx) error {
-		c.GetRespHeader("Content-Type")
-		originalURL := string(c.Body())
-		id := generateShortID()
-		urlMapping[id] = originalURL
-
-		shortURL := "http://localhost:8080/" + id
-		return c.Status(fiber.StatusTemporaryRedirect).SendString(shortURL)
-	})
-
-	tests := []set{
+	}{
 		{
 			name:         "HTTP status 307",
-			path:         "/",
+			path:         "/1",
+			id:           "1",
 			expectedCode: http.StatusTemporaryRedirect,
-			URL:          "https://example.com",
-			Header:       "text/plain; charset=utf-8",
+			URL:          "http://yandex.ru",
+		},
+		{
+			name:         "get invalid URL",
+			path:         "/invalid_id",
+			id:           "invalid_id",
+			expectedCode: http.StatusBadRequest,
+			URL:          "",
+		},
+		{
+			name:         "get status not found",
+			path:         "/invalid_id2",
+			id:           "invalid_id2",
+			expectedCode: http.StatusNotFound,
+			URL:          "",
 		},
 	}
+	server.storage["invalid_id"] = "!$#09"
+	server.storage["1"] = "http://yandex.ru"
 
 	for _, test := range tests {
-		a := bytes.NewBuffer([]byte(test.URL))
-		req := httptest.NewRequest(http.MethodPost, test.path, a)
-		resp, err := app.Test(req, -1)
+
+		req := httptest.NewRequest(http.MethodGet, test.path, nil)
+
+		resp, err := server.app.Test(req, -1)
+
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		assert.Equal(t, test.Header, resp.Header.Get("Content-Type"), test.name)
+		assert.Equalf(t, test.URL, resp.Header.Get("Location"), "unexpected redirect URL")
+		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
 		err = resp.Body.Close()
-		if err != nil {
-			log.Println(err.Error())
-		}
+
 	}
 }
