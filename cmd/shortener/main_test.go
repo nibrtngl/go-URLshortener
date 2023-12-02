@@ -53,8 +53,9 @@ func TestShortenURLHandler(t *testing.T) {
 		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
 
-		err = resp.Body.Close()
+		resp.Body.Close()
 	}
+
 }
 func TestRedirectToOriginalURL(t *testing.T) {
 
@@ -99,14 +100,14 @@ func TestRedirectToOriginalURL(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, test.path, nil)
 
 		resp, err := server.app.Test(req, -1)
-
 		if err != nil {
-			log.Println(err)
+			t.Errorf("Error testing %s: %s", test.name, err.Error())
 			continue
 		}
 		assert.Equalf(t, test.URL, resp.Header.Get("Location"), "unexpected redirect URL")
 		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
+		resp.Body.Close()
 
 	}
 }
