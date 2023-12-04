@@ -64,7 +64,7 @@ func isValidURL(url1 string) bool {
 }
 
 func generateShortID() string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY0123456789"
 	idLength := 8
 	b := make([]byte, idLength)
 
