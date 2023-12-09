@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"math/rand"
@@ -8,15 +9,24 @@ import (
 	"net/url"
 )
 
-type Server struct {
-	storage map[string]string
-	app     *fiber.App
+type Config struct {
+	Address string
+	BaseURL string
 }
 
-func NewServer() *Server {
+type Server struct {
+	config         Config
+	storage        map[string]string
+	app            *fiber.App
+	ShortURLPrefix string
+}
+
+func NewServer(config Config) *Server {
 	return &Server{
-		storage: make(map[string]string),
-		app:     fiber.New(),
+		config:         config,
+		storage:        make(map[string]string),
+		app:            fiber.New(),
+		ShortURLPrefix: config.BaseURL + "/",
 	}
 }
 
@@ -25,9 +35,9 @@ func (s *Server) setupRoutes() {
 	s.app.Get("/:id", s.redirectToOriginalURL)
 }
 
-func (s *Server) Run(addr string) error {
+func (s *Server) Run() error {
 	s.setupRoutes()
-	return s.app.Listen(addr)
+	return s.app.Listen(s.config.Address)
 }
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
@@ -39,7 +49,7 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	id := generateShortID()
 	s.storage[id] = originalURL
 
-	shortURL := fmt.Sprintf("http://localhost:8080/%s", id)
+	shortURL := fmt.Sprintf("%s%s", s.ShortURLPrefix, id)
 
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
@@ -68,7 +78,7 @@ func generateShortID() string {
 	idLength := 8
 	b := make([]byte, idLength)
 
-	// Генерация уникального идентификатора
+	// Generate a unique identifier
 	for i := range b {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
@@ -77,6 +87,23 @@ func generateShortID() string {
 }
 
 func main() {
-	server := NewServer()
-	server.Run(":8080")
+	// Parse command-line arguments
+	address := flag.String("a", "localhost:8080", "address to run the HTTP server")
+	baseURL := flag.String("b", "http://localhost:8080", "base URL for the shortened URL")
+	flag.Parse()
+
+	// Initialize configuration
+	config := Config{
+		Address: *address,
+		BaseURL: *baseURL,
+	}
+
+	// Initialize server with the configuration
+	server := NewServer(config)
+
+	// Run the server
+	err := server.Run()
+	if err != nil {
+		fmt.Printf("Error running server: %v", err)
+	}
 }

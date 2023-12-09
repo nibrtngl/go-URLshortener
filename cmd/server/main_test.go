@@ -10,8 +10,12 @@ import (
 )
 
 func TestShortenURLHandler(t *testing.T) {
+	config := Config{
+		Address: "localhost:8080",
+		BaseURL: "http://localhost:8080",
+	}
 
-	server := NewServer()
+	server := NewServer(config)
 	server.app.Post("/", server.shortenURLHandler)
 
 	tests := []struct {
@@ -58,8 +62,12 @@ func TestShortenURLHandler(t *testing.T) {
 
 }
 func TestRedirectToOriginalURL(t *testing.T) {
+	config := Config{
+		Address: "localhost:8080",
+		BaseURL: "http://localhost:8080",
+	}
 
-	server := NewServer()
+	server := NewServer(config)
 	server.app.Get("/:id", server.redirectToOriginalURL)
 
 	tests := []struct {
