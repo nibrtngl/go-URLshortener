@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bytes"
@@ -10,9 +10,13 @@ import (
 )
 
 func TestShortenURLHandler(t *testing.T) {
+	config := Config{
+		Address: "localhost:8080",
+		BaseURL: "http://localhost:8080",
+	}
 
-	server := NewServer()
-	server.app.Post("/", server.shortenURLHandler)
+	server := NewServer(config)
+	server.App.Post("/", server.shortenURLHandler)
 
 	tests := []struct {
 		name         string
@@ -45,7 +49,7 @@ func TestShortenURLHandler(t *testing.T) {
 		b := bytes.NewBuffer([]byte(test.URL))
 		req := httptest.NewRequest(http.MethodPost, test.path, b)
 
-		resp, err := server.app.Test(req, -1)
+		resp, err := server.App.Test(req, -1)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -58,9 +62,13 @@ func TestShortenURLHandler(t *testing.T) {
 
 }
 func TestRedirectToOriginalURL(t *testing.T) {
+	config := Config{
+		Address: "localhost:8080",
+		BaseURL: "http://localhost:8080",
+	}
 
-	server := NewServer()
-	server.app.Get("/:id", server.redirectToOriginalURL)
+	server := NewServer(config)
+	server.App.Get("/:id", server.redirectToOriginalURL)
 
 	tests := []struct {
 		name         string
@@ -92,14 +100,14 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			URL:          "",
 		},
 	}
-	server.storage["invalid_id"] = "!$#09"
-	server.storage["1"] = "http://yandex.ru"
+	server.Storage["invalid_id"] = "!$#09"
+	server.Storage["1"] = "http://yandex.ru"
 
 	for _, test := range tests {
 
 		req := httptest.NewRequest(http.MethodGet, test.path, nil)
 
-		resp, err := server.app.Test(req, -1)
+		resp, err := server.App.Test(req, -1)
 		if err != nil {
 			t.Errorf("Error testing %s: %s", test.name, err.Error())
 			continue
