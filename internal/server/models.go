@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 type Config struct {
@@ -17,10 +18,14 @@ type Server struct {
 }
 
 func NewServer(config Config) *Server {
+	log := fiber.New()
+	log.Use(logger.New(logger.Config{
+		Format: "{\"status\": ${status}, \"duration\": \"${latency}\", \"method\": \"${method}\", \"path\": \"${path}\", \"resp\": \"${resBody}\"}\n",
+	}))
 	return &Server{
 		Config:         config,
 		Storage:        make(map[string]string),
-		App:            fiber.New(),
+		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
 	}
 }
