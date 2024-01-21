@@ -7,17 +7,30 @@ import (
 )
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
-	originalURL := string(c.Body())
-	if !isValidURL(originalURL) {
-		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
+	request := new(ShortenRequest)
+	if err := c.BodyParser(request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
 	}
 
-	id := generateShortID()
-	s.Storage[id] = originalURL
+	// Проверка действительности URL-адреса
+	_, err := url.ParseRequestURI(request.URL)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid URL",
+		})
+	}
 
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+	// Создание сокращенного URL и сохранение его в хранилище
+	shortURL := s.ShortURLPrefix + generateShortID()
+	s.Storage[shortURL] = request.URL
 
-	return c.Status(http.StatusCreated).SendString(shortURL)
+	response := ShortenResponse{
+		Result: shortURL,
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(response)
 }
 
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {

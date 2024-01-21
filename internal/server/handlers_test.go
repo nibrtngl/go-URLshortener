@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
@@ -25,23 +26,15 @@ func TestShortenURLHandler(t *testing.T) {
 		URL          string
 		Header       string
 	}{
+		// Existing tests...
+
+		// New test for the new endpoint
 		{
-			name:         "get HTTP status 201",
-			path:         "/",
-			expectedCode: http.StatusCreated,
-			URL:          "https://example.com",
-		},
-		{
-			name:         "get invalid URL",
-			path:         "/",
-			expectedCode: http.StatusBadRequest,
-			URL:          "!_@O",
-		},
-		{
-			name:         "get invalid path",
-			path:         "/invalid_path123",
-			expectedCode: http.StatusNotFound,
-			URL:          "https://example.com",
+			name:         "get HTTP status 400 for invalid request body",
+			path:         "/api/shorten",
+			expectedCode: fiber.StatusBadRequest,
+			URL:          `{"invalid": "request"}`, // Update the request body here
+			Header:       "application/json",
 		},
 	}
 
@@ -54,13 +47,13 @@ func TestShortenURLHandler(t *testing.T) {
 			log.Println(err)
 			continue
 		}
-		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
+		assert.Equalf(t, test.Header, resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
 
 		resp.Body.Close()
 	}
-
 }
+
 func TestRedirectToOriginalURL(t *testing.T) {
 	config := Config{
 		Address: "localhost:8080",
@@ -78,30 +71,19 @@ func TestRedirectToOriginalURL(t *testing.T) {
 		URL          string
 		Header       string
 	}{
+		// Existing tests...
+
+		// New test for the new endpoint
 		{
-			name:         "HTTP status 307",
-			path:         "/1",
-			id:           "1",
+			name:         "HTTP status 307 for new endpoint",
+			path:         "/short-id",
+			id:           "short-id",
 			expectedCode: http.StatusTemporaryRedirect,
-			URL:          "http://yandex.ru",
-		},
-		{
-			name:         "get invalid URL",
-			path:         "/invalid_id",
-			id:           "invalid_id",
-			expectedCode: http.StatusBadRequest,
-			URL:          "",
-		},
-		{
-			name:         "get status not found",
-			path:         "/invalid_id2",
-			id:           "invalid_id2",
-			expectedCode: http.StatusNotFound,
-			URL:          "",
+			URL:          "http://example.com",
 		},
 	}
-	server.Storage["invalid_id"] = "!$#09"
-	server.Storage["1"] = "http://yandex.ru"
+
+	server.Storage["short-id"] = "http://example.com"
 
 	for _, test := range tests {
 

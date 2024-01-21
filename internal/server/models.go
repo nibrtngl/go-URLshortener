@@ -15,6 +15,15 @@ type Server struct {
 	Storage        map[string]string
 	App            *fiber.App
 	ShortURLPrefix string
+	Result         string `json:"URL"`
+}
+
+type ShortenResponse struct {
+	Result string `json:"result"`
+}
+
+type ShortenRequest struct {
+	URL string `json:"url"`
 }
 
 func NewServer(config Config) *Server {
@@ -22,15 +31,21 @@ func NewServer(config Config) *Server {
 	log.Use(logger.New(logger.Config{
 		Format: "{\"status\": ${status}, \"duration\": \"${latency}\", \"method\": \"${method}\", \"path\": \"${path}\", \"resp\": \"${resBody}\"}\n",
 	}))
-	return &Server{
+
+	server := &Server{
 		Config:         config,
 		Storage:        make(map[string]string),
 		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
 	}
+
+	server.setupRoutes() // Вызов метода setupRoutes
+
+	return server
 }
 
 func (s *Server) setupRoutes() {
+	s.App.Post("/api/shorten", s.shortenURLHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
 }
