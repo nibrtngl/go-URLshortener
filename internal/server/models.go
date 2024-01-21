@@ -5,6 +5,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
+type ShortenRequest struct {
+	URL string `json:"url"`
+}
+
 type Config struct {
 	Address string
 	BaseURL string
@@ -20,10 +24,6 @@ type Server struct {
 
 type ShortenResponse struct {
 	Result string `json:"result"`
-}
-
-type ShortenRequest struct {
-	URL string `json:"url"`
 }
 
 func NewServer(config Config) *Server {
@@ -45,9 +45,9 @@ func NewServer(config Config) *Server {
 }
 
 func (s *Server) setupRoutes() {
-	s.App.Post("/api/shorten", s.shortenURLHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
+	s.App.Post("/api/shorten", s.shortenURLHandler)
 }
 
 func (s *Server) Run() error {

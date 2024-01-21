@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	address := flag.String("a", "", "address to run the HTTP server")
 	baseURL := flag.String("b", "", "base URL for the shortened URL")
 	flag.Parse()
