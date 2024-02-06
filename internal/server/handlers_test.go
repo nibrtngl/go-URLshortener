@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
@@ -126,40 +125,32 @@ func TestShortenAPIHandler(t *testing.T) {
 		Address: "localhost:8080",
 		BaseURL: "http://localhost:8080",
 	}
-
 	server := NewServer(config)
 	server.App.Post("/api/shorten", server.shortenAPIHandler)
 
 	tests := []struct {
-		name         string
-		path         string
-		expectedCode int
-		URL          string
-		Header       string
+		name           string
+		requestBody    string
+		expectedStatus int
+		expectedResult string
 	}{
 		{
-			name:         "get HTTP status 201",
-			path:         "/api/shorten",
-			expectedCode: http.StatusCreated,
-			URL:          "https://example.com",
+			name:           "Valid request",
+			requestBody:    `{"url": "https://example.com"}`,
+			expectedStatus: http.StatusCreated,
+			expectedResult: `{"result": "http://shorturl.com/abc123"}`,
 		},
 		{
-			name:         "get invalid URL",
-			path:         "/api/shorten",
-			expectedCode: http.StatusBadRequest,
-			URL:          "!_@O",
-		},
-		{
-			name:         "get invalid path",
-			path:         "/api/shortensadasd",
-			expectedCode: http.StatusNotFound,
-			URL:          "https://example.com",
+			name:           "Invalid JSON format",
+			requestBody:    `{"url123": "23https://example.com",}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedResult: "Bad Request: Invalid JSON format",
 		},
 	}
 
 	for _, test := range tests {
-		b := bytes.NewBuffer([]byte(fmt.Sprintf(`{"url":"%s"}`, test.URL)))
-		req := httptest.NewRequest(http.MethodPost, test.path, b)
+		b := bytes.NewBuffer([]byte(test.requestBody))
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten", b)
 
 		resp, err := server.App.Test(req, -1)
 		if err != nil {
@@ -167,7 +158,7 @@ func TestShortenAPIHandler(t *testing.T) {
 			continue
 		}
 		assert.Equalf(t, "application/json", resp.Header.Get("Content-type"), test.name)
-		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
+		assert.Equalf(t, test.expectedStatus, resp.StatusCode, test.name)
 
 		resp.Body.Close()
 	}

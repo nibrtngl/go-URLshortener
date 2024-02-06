@@ -1,13 +1,13 @@
 package server
 
 import (
+	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"net/http"
 	"net/url"
 )
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
-	c.Type("application/json")
 	originalURL := string(c.Body())
 	if !isValidURL(originalURL) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
@@ -22,7 +22,6 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 }
 
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
-	c.Type("application/json")
 	id := c.Params("id")
 	originalURL, exist := s.Storage[id]
 	if !exist {
@@ -38,8 +37,8 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 
 func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req ShortenRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid JSON format")
+	if err := json.Unmarshal(c.Body(), &req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON("Bad Request: Invalid JSON format")
 	}
 
 	if !isValidURL(req.URL) {
@@ -55,5 +54,5 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 		Result: shortURL,
 	}
 
-	return c.Status(http.StatusCreated).Type("application/json").JSON(resp)
+	return c.Status(http.StatusCreated).JSON(resp)
 }
