@@ -7,6 +7,7 @@ import (
 )
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
+	c.Type("application/json")
 	originalURL := string(c.Body())
 	if !isValidURL(originalURL) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
@@ -21,6 +22,7 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 }
 
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
+	c.Type("application/json")
 	id := c.Params("id")
 	originalURL, exist := s.Storage[id]
 	if !exist {
@@ -53,5 +55,5 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 		Result: shortURL,
 	}
 
-	return c.Status(http.StatusCreated).JSON(resp)
+	return c.Status(http.StatusCreated).Type("application/json").JSON(resp)
 }
