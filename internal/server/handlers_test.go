@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
@@ -127,7 +128,7 @@ func TestShortenAPIHandler(t *testing.T) {
 	}
 
 	server := NewServer(config)
-	server.App.Post("/api/shorten", server.shortenURLHandler)
+	server.App.Post("/api/shorten", server.shortenAPIHandler)
 
 	tests := []struct {
 		name         string
@@ -157,7 +158,7 @@ func TestShortenAPIHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		b := bytes.NewBuffer([]byte(test.URL))
+		b := bytes.NewBuffer([]byte(fmt.Sprintf(`{"url":"%s"}`, test.URL)))
 		req := httptest.NewRequest(http.MethodPost, test.path, b)
 
 		resp, err := server.App.Test(req, -1)
@@ -165,7 +166,7 @@ func TestShortenAPIHandler(t *testing.T) {
 			log.Println(err)
 			continue
 		}
-		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
+		assert.Equalf(t, "application/json", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
 
 		resp.Body.Close()

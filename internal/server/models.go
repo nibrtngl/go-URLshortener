@@ -6,6 +6,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ShortenResponse struct {
+	Result string `json:"result"`
+}
+
 type ShortenRequest struct {
 	URL string `json:"url"`
 }
@@ -56,6 +60,7 @@ func NewServer(config Config) *Server {
 }
 
 func (s *Server) setupRoutes() {
+	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
 	s.App.Post("/api/shorten", s.shortenURLHandler)
