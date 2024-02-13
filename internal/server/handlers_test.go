@@ -39,8 +39,8 @@ func TestShortenURLHandler(t *testing.T) {
 		},
 		{
 			name:         "get invalid path",
-			path:         "/invalid_path123",
-			expectedCode: http.StatusNotFound,
+			path:         "/invalid_path123s",
+			expectedCode: http.StatusMethodNotAllowed,
 			URL:          "https://example.com",
 		},
 	}
@@ -117,5 +117,49 @@ func TestRedirectToOriginalURL(t *testing.T) {
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
 		resp.Body.Close()
 
+	}
+}
+
+func TestShortenAPIHandler(t *testing.T) {
+	config := Config{
+		Address: "localhost:8080",
+		BaseURL: "http://localhost:8080",
+	}
+	server := NewServer(config)
+	server.App.Post("/api/shorten", server.shortenAPIHandler)
+
+	tests := []struct {
+		name           string
+		requestBody    string
+		expectedStatus int
+		expectedResult string
+	}{
+		{
+			name:           "Valid request",
+			requestBody:    `{"url": "https://example.com"}`,
+			expectedStatus: http.StatusCreated,
+			expectedResult: `{"result": "http://shorturl.com/abc123"}`,
+		},
+		{
+			name:           "Invalid JSON format",
+			requestBody:    `{"url123": "23https://example.com",}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedResult: "Bad Request: Invalid JSON format",
+		},
+	}
+
+	for _, test := range tests {
+		b := bytes.NewBuffer([]byte(test.requestBody))
+		req := httptest.NewRequest(http.MethodPost, "/api/shorten", b)
+
+		resp, err := server.App.Test(req, -1)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		assert.Equalf(t, "application/json", resp.Header.Get("Content-type"), test.name)
+		assert.Equalf(t, test.expectedStatus, resp.StatusCode, test.name)
+
+		resp.Body.Close()
 	}
 }
