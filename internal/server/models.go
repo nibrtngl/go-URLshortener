@@ -6,6 +6,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 type ShortenResponse struct {
 	Result string `json:"result"`
 }
@@ -63,7 +67,6 @@ func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
-	s.App.Post("/api/shorten", s.shortenURLHandler)
 }
 
 func (s *Server) Run() error {

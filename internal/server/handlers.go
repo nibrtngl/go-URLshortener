@@ -38,7 +38,10 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req ShortenRequest
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
-		return c.Status(http.StatusBadRequest).JSON("Bad Request: Invalid JSON format")
+		errResponse := ErrorResponse{
+			Error: "bad request: Invalid json format",
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
 	}
 
 	if !isValidURL(req.URL) {
