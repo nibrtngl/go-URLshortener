@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/sirupsen/logrus"
 )
@@ -46,6 +47,9 @@ func NewServer(config Config) *Server {
 	log.Use(logger.New(logger.Config{
 		Output: &fiberLogger{logger: logrus.New()}, // Set the output to the custom fiberLogger
 		Format: "{\"status\": ${status}, \"duration\": \"${latency}\", \"method\": \"${method}\", \"path\": \"${path}\", \"resp\": \"${resBody}\"}\n",
+	}))
+	log.Use(compress.New(compress.Config{
+		Level: compress.LevelBestSpeed,
 	}))
 
 	logger := logrus.New()
