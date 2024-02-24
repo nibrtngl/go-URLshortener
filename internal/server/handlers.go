@@ -61,9 +61,9 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 
 	s.Storage[shortURL] = req.URL
 
-	if *s.Config.FileStoragePath != "" {
+	if s.Config.FileStoragePath != "" {
 		// Сохранение данных на диск
-		err := s.saveStorageToFile(*s.Config.FileStoragePath)
+		err := s.saveStorageToFile(s.Config.FileStoragePath)
 		if err != nil {
 			logrus.Errorf("Failed to save storage to file: %v", err)
 		}

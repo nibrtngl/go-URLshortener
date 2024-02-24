@@ -22,7 +22,7 @@ type ShortenRequest struct {
 type Config struct {
 	Address         string
 	BaseURL         string
-	FileStoragePath *string
+	FileStoragePath string
 }
 
 type Server struct {
@@ -63,9 +63,9 @@ func NewServer(config Config) *Server {
 		Logger:         logger, // Assign the logger to the Server struct
 	}
 
-	if *config.FileStoragePath != "" {
+	if config.FileStoragePath != "" {
 		// Загрузка данных из файла
-		err := server.loadStorageFromFile(*config.FileStoragePath)
+		err := server.loadStorageFromFile(config.FileStoragePath)
 		if err != nil {
 			logrus.Errorf("Failed to load storage from file: %v", err)
 		}

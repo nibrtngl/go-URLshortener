@@ -36,7 +36,7 @@ func main() {
 	config := server.Config{
 		Address:         *address,
 		BaseURL:         *baseURL,
-		FileStoragePath: &fileStoragePath,
+		FileStoragePath: fileStoragePath,
 	}
 
 	server := server.NewServer(config)
