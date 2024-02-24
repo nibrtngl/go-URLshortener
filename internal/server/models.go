@@ -1,10 +1,12 @@
 package server
 
 import (
+	"flag"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 type ErrorResponse struct {
@@ -20,8 +22,9 @@ type ShortenRequest struct {
 }
 
 type Config struct {
-	Address string
-	BaseURL string
+	Address         string
+	BaseURL         string
+	FileStoragePath *string
 }
 
 type Server struct {
@@ -54,12 +57,27 @@ func NewServer(config Config) *Server {
 
 	logger := logrus.New()
 
+	fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
+	if fileStoragePath == "" {
+		fileStoragePathFlag := flag.String("f", "/tmp/short-url-db.json", "Path to the file for storing data")
+		fileStoragePath = *fileStoragePathFlag // Dereference the pointer to get the string value
+	}
+	config.FileStoragePath = &fileStoragePath // Assign the address of the string to FileStoragePath
+
 	server := &Server{
 		Config:         config,
 		Storage:        make(map[string]string),
 		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
 		Logger:         logger, // Assign the logger to the Server struct
+	}
+
+	if *config.FileStoragePath != "" {
+		// Загрузка данных из файла
+		err := server.loadStorageFromFile(*config.FileStoragePath)
+		if err != nil {
+			logrus.Errorf("Failed to load storage from file: %v", err)
+		}
 	}
 
 	server.setupRoutes()

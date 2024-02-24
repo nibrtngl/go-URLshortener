@@ -1,8 +1,11 @@
 package server
 
 import (
+	"bufio"
+	"encoding/json"
 	"math/rand"
 	"net/url"
+	"os"
 )
 
 func isValidURL(url1 string) bool {
@@ -21,4 +24,57 @@ func generateShortID() string {
 	}
 
 	return string(b)
+}
+
+func (s *Server) loadStorageFromFile(filePath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var entry map[string]string
+		err := json.Unmarshal(scanner.Bytes(), &entry)
+		if err != nil {
+			return err
+		}
+		s.Storage[entry["short_url"]] = entry["original_url"]
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) saveStorageToFile(filePath string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	for shortURL, originalURL := range s.Storage {
+		entry := map[string]string{
+			"short_url":    shortURL,
+			"original_url": originalURL,
+		}
+		data, err := json.Marshal(entry)
+		if err != nil {
+			return err
+		}
+		_, err = file.Write(data)
+		if err != nil {
+			return err
+		}
+		_, err = file.WriteString("\n")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

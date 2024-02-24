@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 )
@@ -37,6 +38,7 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 
 func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req ShortenRequest
+
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := ErrorResponse{
 			Error: "bad request: Invalid json format",
@@ -55,6 +57,16 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 
 	resp := ShortenResponse{
 		Result: shortURL,
+	}
+
+	s.Storage[shortURL] = req.URL
+
+	if *s.Config.FileStoragePath != "" {
+		// Сохранение данных на диск
+		err := s.saveStorageToFile(*s.Config.FileStoragePath)
+		if err != nil {
+			logrus.Errorf("Failed to save storage to file: %v", err)
+		}
 	}
 
 	return c.Status(http.StatusCreated).JSON(resp)
