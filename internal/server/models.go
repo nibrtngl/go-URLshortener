@@ -1,12 +1,10 @@
 package server
 
 import (
-	"flag"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 type ErrorResponse struct {
@@ -56,13 +54,6 @@ func NewServer(config Config) *Server {
 	}))
 
 	logger := logrus.New()
-
-	fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
-	if fileStoragePath == "" {
-		fileStoragePathFlag := flag.String("f", "/tmp/short-url-db.json", "Path to the file for storing data")
-		fileStoragePath = *fileStoragePathFlag // Dereference the pointer to get the string value
-	}
-	config.FileStoragePath = &fileStoragePath // Assign the address of the string to FileStoragePath
 
 	server := &Server{
 		Config:         config,

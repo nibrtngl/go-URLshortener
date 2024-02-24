@@ -20,7 +20,12 @@ func main() {
 		*baseURL = envBaseURL
 	}
 
-	// Set default values if not provided
+	fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
+	if fileStoragePath == "" {
+		fileStoragePathFlag := flag.String("f", "/tmp/short-url-db.json", "Path to the file for storing data")
+		fileStoragePath = *fileStoragePathFlag // Dereference the pointer to get the string value
+	}
+
 	if *address == "" {
 		*address = "localhost:8080"
 	}
@@ -29,8 +34,9 @@ func main() {
 	}
 
 	config := server.Config{
-		Address: *address,
-		BaseURL: *baseURL,
+		Address:         *address,
+		BaseURL:         *baseURL,
+		FileStoragePath: &fileStoragePath,
 	}
 
 	server := server.NewServer(config)
