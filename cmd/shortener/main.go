@@ -22,7 +22,7 @@ func main() {
 
 	fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
 	if fileStoragePath == "" {
-		fileStoragePathFlag := flag.String("f", "/tmp/short-url-db.json", "Path to the file for storing data")
+		fileStoragePathFlag := flag.String("f", "/tmp/KFSBM", "Path to the file for storing data")
 		fileStoragePath = *fileStoragePathFlag // Dereference the pointer to get the string value
 	}
 
