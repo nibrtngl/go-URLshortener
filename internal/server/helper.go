@@ -33,6 +33,15 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	}
 	defer file.Close()
 
+	// Check if the file is empty
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if stat.Size() == 0 {
+		return nil // Return without populating the Storage map
+	}
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		var entry map[string]string
