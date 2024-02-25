@@ -57,23 +57,9 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	}
 	defer file.Close()
 
-	for shortURL, originalURL := range s.Storage {
-		entry := map[string]string{
-			"short_url":    shortURL,
-			"original_url": originalURL,
-		}
-		data, err := json.Marshal(entry)
-		if err != nil {
-			return err
-		}
-		_, err = file.Write(data)
-		if err != nil {
-			return err
-		}
-		_, err = file.WriteString("\n")
-		if err != nil {
-			return err
-		}
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(s.Storage); err != nil {
+		return err
 	}
 
 	return nil
