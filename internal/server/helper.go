@@ -60,19 +60,16 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	}
 	defer file.Close()
 
+	encoder := json.NewEncoder(file)
 	for uuid, originalURL := range s.Storage {
 		entry := map[string]string{
 			"uuid":         uuid,
 			"original_url": originalURL,
 		}
-		line, err := json.Marshal(entry)
+		err := encoder.Encode(entry)
 		if err != nil {
-			logrus.Errorf("Failed to marshal storage entry: %v", err)
+			logrus.Errorf("Failed to encode storage entry: %v", err)
 			continue
-		}
-		_, err = file.Write(append(line, '\n'))
-		if err != nil {
-			logrus.Errorf("Failed to write storage entry to file: %v", err)
 		}
 	}
 
