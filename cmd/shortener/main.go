@@ -4,7 +4,7 @@ import (
 	"fiber-apis/internal/server"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -64,7 +64,14 @@ func main() {
 	}
 
 	// Read the file with saved URLs
-	data, err := ioutil.ReadFile(fileStoragePath)
+	file, err := os.Open(fileStoragePath)
+	if err != nil {
+		fmt.Printf("Error opening file: %v", err)
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Printf("Error reading file: %v", err)
 		return
