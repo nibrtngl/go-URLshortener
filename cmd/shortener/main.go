@@ -41,6 +41,13 @@ func main() {
 		return
 	}
 
+	// Create the file for data storage if it doesn't exist
+	_, err = os.OpenFile(fileStoragePath, os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Printf("Error creating file: %v", err)
+		return
+	}
+
 	config := server.Config{
 		Address:         *address,
 		BaseURL:         *baseURL,
