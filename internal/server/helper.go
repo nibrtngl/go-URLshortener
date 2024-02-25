@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"encoding/csv"
 	"encoding/json"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -60,15 +61,13 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	}
 	defer file.Close()
 
-	encoder := json.NewEncoder(file)
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
 	for uuid, originalURL := range s.Storage {
-		entry := map[string]string{
-			"uuid":         uuid,
-			"original_url": originalURL,
-		}
-		err := encoder.Encode(entry)
+		err := writer.Write([]string{uuid, originalURL})
 		if err != nil {
-			logrus.Errorf("Failed to encode storage entry: %v", err)
+			logrus.Errorf("Failed to write storage entry: %v", err)
 			continue
 		}
 	}
