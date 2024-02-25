@@ -34,6 +34,7 @@ func main() {
 		*baseURL = "http://localhost:8080"
 	}
 
+	// Create the directory for file storage if it doesn't exist
 	err := os.MkdirAll(filepath.Dir(fileStoragePath), os.ModePerm)
 	if err != nil {
 		fmt.Printf("Error creating directory: %v", err)
