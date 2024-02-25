@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -33,6 +34,12 @@ func main() {
 		*baseURL = "http://localhost:8080"
 	}
 
+	err := os.MkdirAll(filepath.Dir(fileStoragePath), os.ModePerm)
+	if err != nil {
+		fmt.Printf("Error creating directory: %v", err)
+		return
+	}
+
 	config := server.Config{
 		Address:         *address,
 		BaseURL:         *baseURL,
@@ -42,7 +49,7 @@ func main() {
 	server := server.NewServer(config)
 
 	// Run the server
-	err := server.Run()
+	err = server.Run()
 	if err != nil {
 		fmt.Printf("Error running server: %v", err)
 	}
