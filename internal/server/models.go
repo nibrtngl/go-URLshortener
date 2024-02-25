@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 type ErrorResponse struct {
@@ -44,9 +45,18 @@ func (fl *fiberLogger) Write(p []byte) (n int, err error) {
 }
 
 func NewServer(config Config) *Server {
+	if config.FileStoragePath == "" {
+		fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
+		if fileStoragePath != "" {
+			config.FileStoragePath = fileStoragePath
+		} else {
+			config.FileStoragePath = "/tmp/short-url-db.json"
+		}
+	}
+
 	log := fiber.New()
 	log.Use(logger.New(logger.Config{
-		Output: &fiberLogger{logger: logrus.New()}, // Set the output to the custom fiberLogger
+		Output: &fiberLogger{logger: logrus.New()},
 		Format: "{\"status\": ${status}, \"duration\": \"${latency}\", \"method\": \"${method}\", \"path\": \"${path}\", \"resp\": \"${resBody}\"}\n",
 	}))
 	log.Use(compress.New(compress.Config{
@@ -60,11 +70,10 @@ func NewServer(config Config) *Server {
 		Storage:        make(map[string]string),
 		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
-		Logger:         logger, // Assign the logger to the Server struct
+		Logger:         logger,
 	}
 
 	if config.FileStoragePath != "" {
-		// Загрузка данных из файла
 		err := server.loadStorageFromFile(config.FileStoragePath)
 		if err != nil {
 			logrus.Errorf("Failed to load storage from file: %v", err)

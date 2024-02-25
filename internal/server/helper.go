@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/url"
 	"os"
@@ -33,23 +34,16 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	}
 	defer file.Close()
 
-	// Check if the file is empty
-	stat, err := file.Stat()
-	if err != nil {
-		return err
-	}
-	if stat.Size() == 0 {
-		return nil // Return without populating the Storage map
-	}
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
+		line := scanner.Bytes()
 		var entry map[string]string
-		err := json.Unmarshal(scanner.Bytes(), &entry)
+		err := json.Unmarshal(line, &entry)
 		if err != nil {
-			return err
+			logrus.Errorf("Failed to unmarshal storage entry: %v", err)
+			continue
 		}
-		s.Storage[entry["short_url"]] = entry["original_url"]
+		s.Storage[entry["uuid"]] = entry["original_url"]
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -66,9 +60,20 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	}
 	defer file.Close()
 
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(s.Storage); err != nil {
-		return err
+	for uuid, originalURL := range s.Storage {
+		entry := map[string]string{
+			"uuid":         uuid,
+			"original_url": originalURL,
+		}
+		line, err := json.Marshal(entry)
+		if err != nil {
+			logrus.Errorf("Failed to marshal storage entry: %v", err)
+			continue
+		}
+		_, err = file.Write(append(line, '\n'))
+		if err != nil {
+			logrus.Errorf("Failed to write storage entry to file: %v", err)
+		}
 	}
 
 	return nil
