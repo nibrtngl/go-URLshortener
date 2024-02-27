@@ -31,7 +31,7 @@ type Server struct {
 	App            *fiber.App
 	ShortURLPrefix string
 	Result         string         `json:"URL"`
-	Logger         *logrus.Logger // Add a logger field to the Server struct
+	Logger         *logrus.Logger // Добавить поле logger в структуру Server
 }
 
 type fiberLogger struct {
@@ -55,7 +55,7 @@ func NewServer(config Config) *Server {
 
 	log := fiber.New()
 	log.Use(logger.New(logger.Config{
-		Output: &fiberLogger{logger: logrus.New()}, // Set the output to the custom fiberLogger
+		Output: &fiberLogger{logger: logrus.New()}, // Установить вывод в пользовательский fiberLogger
 		Format: "{\"status\": ${status}, \"duration\": \"${latency}\", \"method\": \"${method}\", \"path\": \"${path}\", \"resp\": \"${resBody}\"}\n",
 	}))
 
@@ -66,7 +66,7 @@ func NewServer(config Config) *Server {
 		Storage:        make(map[string]string),
 		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
-		Logger:         logger, // Assign the logger to the Server struct
+		Logger:         logger, // Присвоить logger структуре Server
 	}
 
 	server.setupRoutes()
