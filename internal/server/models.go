@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -56,11 +55,8 @@ func NewServer(config Config) *Server {
 
 	log := fiber.New()
 	log.Use(logger.New(logger.Config{
-		Output: &fiberLogger{logger: logrus.New()},
+		Output: &fiberLogger{logger: logrus.New()}, // Set the output to the custom fiberLogger
 		Format: "{\"status\": ${status}, \"duration\": \"${latency}\", \"method\": \"${method}\", \"path\": \"${path}\", \"resp\": \"${resBody}\"}\n",
-	}))
-	log.Use(compress.New(compress.Config{
-		Level: compress.LevelBestSpeed,
 	}))
 
 	logger := logrus.New()
@@ -70,14 +66,7 @@ func NewServer(config Config) *Server {
 		Storage:        make(map[string]string),
 		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
-		Logger:         logger,
-	}
-
-	if config.FileStoragePath != "" {
-		err := server.loadStorageFromFile(config.FileStoragePath)
-		if err != nil {
-			logrus.Errorf("Failed to load storage from file: %v", err)
-		}
+		Logger:         logger, // Assign the logger to the Server struct
 	}
 
 	server.setupRoutes()
@@ -93,5 +82,13 @@ func (s *Server) setupRoutes() {
 
 func (s *Server) Run() error {
 	s.setupRoutes()
+
+	if s.Config.FileStoragePath != "" {
+		err := s.saveStorageToFile(s.Config.FileStoragePath)
+		if err != nil {
+			logrus.Errorf("Failed to save storage to file: %v", err)
+		}
+	}
+
 	return s.App.Listen(s.Config.Address)
 }

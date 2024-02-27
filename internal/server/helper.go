@@ -3,7 +3,6 @@ package server
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/url"
 	"os"
@@ -27,6 +26,40 @@ func generateShortID() string {
 	return string(b)
 }
 
+func (s *Server) saveStorageToFile(filePath string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+	for key, value := range s.Storage {
+		entry := map[string]string{
+			"uuid":         key,
+			"short_url":    value,
+			"original_url": value,
+		}
+
+		entryJSON, err := json.Marshal(entry)
+		if err != nil {
+			return err
+		}
+
+		_, err = writer.WriteString(string(entryJSON) + "\n")
+		if err != nil {
+			return err
+		}
+	}
+
+	err = writer.Flush()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Server) loadStorageFromFile(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -36,34 +69,21 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line := scanner.Bytes()
 		var entry map[string]string
-		err := json.Unmarshal(line, &entry)
+		err := json.Unmarshal(scanner.Bytes(), &entry)
 		if err != nil {
-			logrus.Errorf("Failed to unmarshal storage entry: %v", err)
-			continue
+			return err
 		}
-		s.Storage[entry["uuid"]] = entry["original_url"]
+
+		uuid := entry["uuid"]
+		shortURL := entry["short_url"]
+		originalURL := entry["original_url"]
+
+		s.Storage[shortURL] = originalURL
+		s.Storage[uuid] = shortURL
 	}
 
 	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *Server) saveStorageToFile(filePath string) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	err = encoder.Encode(s.Storage)
-	if err != nil {
 		return err
 	}
 
