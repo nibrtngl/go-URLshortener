@@ -10,7 +10,18 @@ import (
 func main() {
 	address := flag.String("a", "", "address to run the HTTP server")
 	baseURL := flag.String("b", "", "base URL for the shortened URL")
+	fileStoragePath := flag.String("f", "", "path to the file storage")
 	flag.Parse()
+
+	if *fileStoragePath == "" {
+		*fileStoragePath = os.Getenv("FILE_STORAGE_PATH")
+	}
+
+	if *fileStoragePath == "" {
+		*fileStoragePath = "/tmp/short-url-db.json"
+	}
+
+	fmt.Println("File storage path:", *fileStoragePath)
 
 	// Read environment variables
 	if envAddress := os.Getenv("SERVER_ADDRESS"); envAddress != "" {

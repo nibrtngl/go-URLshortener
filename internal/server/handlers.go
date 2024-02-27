@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 )
@@ -15,6 +16,11 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 
 	id := generateShortID()
 	s.Storage[id] = originalURL
+
+	err := s.saveStorageToFile(s.Config.FileStoragePath)
+	if err != nil {
+		logrus.Errorf("Failed to save storage to file: %v", err)
+	}
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
