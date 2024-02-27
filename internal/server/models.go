@@ -55,7 +55,7 @@ func NewServer(config Config) *Server {
 
 	log := fiber.New()
 	log.Use(logger.New(logger.Config{
-		Output: &fiberLogger{logger: logrus.New()}, // Установить вывод в пользовательский fiberLogger
+		Output: &fiberLogger{logger: logrus.New()},
 		Format: "{\"status\": ${status}, \"duration\": \"${latency}\", \"method\": \"${method}\", \"path\": \"${path}\", \"resp\": \"${resBody}\"}\n",
 	}))
 
@@ -66,10 +66,18 @@ func NewServer(config Config) *Server {
 		Storage:        make(map[string]string),
 		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
-		Logger:         logger, // Присвоить logger структуре Server
+		Logger:         logger,
 	}
 
 	server.setupRoutes()
+
+	// При запуске сервера проверяем, есть ли файл для загрузки данных
+	if _, err := os.Stat(config.FileStoragePath); !os.IsNotExist(err) {
+		err := server.loadStorageFromFile(config.FileStoragePath)
+		if err != nil {
+			logrus.Errorf("Failed to load storage from file: %v", err)
+		}
+	}
 
 	return server
 }
