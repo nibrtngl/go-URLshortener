@@ -1,36 +1,30 @@
 package server
 
 import (
+	"encoding/json"
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 )
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
-	request := new(ShortenRequest)
-	if err := c.BodyParser(request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+	originalURL := string(c.Body())
+	if !isValidURL(originalURL) {
+		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
-	// Проверка действительности URL-адреса
-	_, err := url.ParseRequestURI(request.URL)
+	id := generateShortID()
+	s.Storage[id] = originalURL
+
+	err := s.saveStorageToFile(s.Config.FileStoragePath)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid URL",
-		})
+		logrus.Errorf("Failed to save storage to file: %v", err)
 	}
 
-	// Создание сокращенного URL и сохранение его в хранилище
-	shortURL := s.ShortURLPrefix + generateShortID()
-	s.Storage[shortURL] = request.URL
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
-	response := ShortenResponse{
-		Result: shortURL,
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(response)
+	return c.Status(http.StatusCreated).SendString(shortURL)
 }
 
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
@@ -45,4 +39,29 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 		c.Set("Location", originalURL)
 		return c.SendStatus(http.StatusTemporaryRedirect)
 	}
+}
+
+func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
+	var req ShortenRequest
+	if err := json.Unmarshal(c.Body(), &req); err != nil {
+		errResponse := ErrorResponse{
+			Error: "bad request: Invalid json format",
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
+	}
+
+	if !isValidURL(req.URL) {
+		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
+	}
+
+	id := generateShortID()
+	s.Storage[id] = req.URL
+
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+
+	resp := ShortenResponse{
+		Result: shortURL,
+	}
+
+	return c.Status(http.StatusCreated).JSON(resp)
 }
