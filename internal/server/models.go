@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 type ErrorResponse struct {
@@ -19,8 +20,9 @@ type ShortenRequest struct {
 }
 
 type Config struct {
-	Address string
-	BaseURL string
+	Address         string
+	BaseURL         string
+	FileStoragePath string
 }
 
 type Server struct {
@@ -29,7 +31,7 @@ type Server struct {
 	App            *fiber.App
 	ShortURLPrefix string
 	Result         string         `json:"URL"`
-	Logger         *logrus.Logger // Add a logger field to the Server struct
+	Logger         *logrus.Logger // Добавить поле logger в структуру Server
 }
 
 type fiberLogger struct {
@@ -42,9 +44,18 @@ func (fl *fiberLogger) Write(p []byte) (n int, err error) {
 }
 
 func NewServer(config Config) *Server {
+	if config.FileStoragePath == "" {
+		fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
+		if fileStoragePath != "" {
+			config.FileStoragePath = fileStoragePath
+		} else {
+			config.FileStoragePath = "/tmp/short-url-db.json"
+		}
+	}
+
 	log := fiber.New()
 	log.Use(logger.New(logger.Config{
-		Output: &fiberLogger{logger: logrus.New()}, // Set the output to the custom fiberLogger
+		Output: &fiberLogger{logger: logrus.New()},
 		Format: "{\"status\": ${status}, \"duration\": \"${latency}\", \"method\": \"${method}\", \"path\": \"${path}\", \"resp\": \"${resBody}\"}\n",
 	}))
 
@@ -55,10 +66,18 @@ func NewServer(config Config) *Server {
 		Storage:        make(map[string]string),
 		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
-		Logger:         logger, // Assign the logger to the Server struct
+		Logger:         logger,
 	}
 
 	server.setupRoutes()
+
+	// При запуске сервера проверяем, есть ли файл для загрузки данных
+	if _, err := os.Stat(config.FileStoragePath); !os.IsNotExist(err) {
+		err := server.loadStorageFromFile(config.FileStoragePath)
+		if err != nil {
+			logrus.Errorf("Failed to load storage from file: %v", err)
+		}
+	}
 
 	return server
 }
@@ -71,5 +90,13 @@ func (s *Server) setupRoutes() {
 
 func (s *Server) Run() error {
 	s.setupRoutes()
+
+	if s.Config.FileStoragePath != "" {
+		err := s.saveStorageToFile(s.Config.FileStoragePath)
+		if err != nil {
+			logrus.Errorf("Failed to save storage to file: %v", err)
+		}
+	}
+
 	return s.App.Listen(s.Config.Address)
 }
