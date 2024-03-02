@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -64,4 +65,14 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(http.StatusCreated).JSON(resp)
+}
+
+func (s *Server) pingHandler(c *fiber.Ctx) error {
+	// Проверяем соединение с БД
+	err := s.DB.Ping(context.Background())
+	if err != nil {
+		s.Logger.Println("Database connection error:", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+	}
+	return c.SendStatus(fiber.StatusOK)
 }

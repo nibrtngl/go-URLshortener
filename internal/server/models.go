@@ -3,9 +3,14 @@ package server
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/jackc/pgx/v4"
 	"github.com/sirupsen/logrus"
 	"os"
 )
+
+type DBConfig struct {
+	DSN string // Строка подключения к БД
+}
 
 type ErrorResponse struct {
 	Error string `json:"error"`
@@ -30,8 +35,10 @@ type Server struct {
 	Storage        map[string]string
 	App            *fiber.App
 	ShortURLPrefix string
-	Result         string         `json:"URL"`
-	Logger         *logrus.Logger // Добавить поле logger в структуру Server
+	Result         string `json:"URL"`
+	Logger         *logrus.Logger
+	DB             *pgx.Conn
+	DSN            string
 }
 
 type fiberLogger struct {
@@ -61,12 +68,29 @@ func NewServer(config Config) *Server {
 
 	logger := logrus.New()
 
+	dbDSN := os.Getenv("DATABASE_DSN")
+	if dbDSN == "" {
+		logger.Fatal("DATABASE_DSN environment variable is not set")
+	}
+
+	// Создаем конфигурацию для подключения к БД
+	dbConfig := DBConfig{
+		DSN: "postgresql://postgres:hk420ty@localhost:8080/postgres",
+	}
+
+	// Подключаемся к БД
+	db, err := connectDB(dbConfig)
+	if err != nil {
+		logger.Fatalf("Failed to connect to database: %v", err)
+	}
+
 	server := &Server{
 		Config:         config,
 		Storage:        make(map[string]string),
 		App:            log,
 		ShortURLPrefix: config.BaseURL + "/",
 		Logger:         logger,
+		DB:             db,
 	}
 
 	server.setupRoutes()
@@ -75,7 +99,7 @@ func NewServer(config Config) *Server {
 	if _, err := os.Stat(config.FileStoragePath); !os.IsNotExist(err) {
 		err := server.loadStorageFromFile(config.FileStoragePath)
 		if err != nil {
-			logrus.Errorf("Failed to load storage from file: %v", err)
+			logger.Errorf("Failed to load storage from file: %v", err)
 		}
 	}
 
@@ -86,6 +110,7 @@ func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
+	s.App.Get("/ping", s.pingHandler)
 }
 
 func (s *Server) Run() error {
