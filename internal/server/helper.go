@@ -2,9 +2,7 @@ package server
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
-	"github.com/jackc/pgx/v4"
 	"math/rand"
 	"net/url"
 	"os"
@@ -90,12 +88,4 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	}
 
 	return nil
-}
-
-func connectDB(config DBConfig) (*pgx.Conn, error) {
-	conn, err := pgx.Connect(context.Background(), config.DSN)
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
 }
