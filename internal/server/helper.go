@@ -26,7 +26,7 @@ func generateShortID() string {
 	return string(b)
 }
 
-func (s *Server) saveStorageToFile(filePath string) error {
+func (s *models.Server) saveStorageToFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	return nil
 }
 
-func (s *Server) loadStorageFromFile(filePath string) error {
+func (s *models.Server) loadStorageFromFile(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err

@@ -2,13 +2,14 @@ package server
 
 import (
 	"encoding/json"
+	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 )
 
-func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
+func (s *models.Server) shortenURLHandler(c *fiber.Ctx) error {
 	originalURL := string(c.Body())
 	if !isValidURL(originalURL) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
@@ -27,7 +28,7 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
 
-func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
+func (s *models.Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
 	originalURL, exist := s.Storage[id]
 	if !exist {
@@ -41,10 +42,10 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	}
 }
 
-func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
-	var req ShortenRequest
+func (s *models.Server) shortenAPIHandler(c *fiber.Ctx) error {
+	var req models.ShortenRequest
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
-		errResponse := ErrorResponse{
+		errResponse := models.ErrorResponse{
 			Error: "bad request: Invalid json format",
 		}
 		return c.Status(http.StatusBadRequest).JSON(errResponse)
@@ -59,14 +60,14 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
-	resp := ShortenResponse{
+	resp := models.ShortenResponse{
 		Result: shortURL,
 	}
 
 	return c.Status(http.StatusCreated).JSON(resp)
 }
 
-func (s *Server) pingHandler(c *fiber.Ctx) error {
+func (s *models.Server) pingHandler(c *fiber.Ctx) error {
 	if s.DSN == "" {
 		s.Logger.Println("Database connection error: DSN is empty")
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")

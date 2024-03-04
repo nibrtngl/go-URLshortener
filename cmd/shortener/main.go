@@ -1,8 +1,7 @@
 package main
 
 import (
-	"context"
-	"fiber-apis/internal/server"
+	"fiber-apis/internal/models"
 	"flag"
 	"fmt"
 	"log"
@@ -14,19 +13,6 @@ func main() {
 	dbDSN := os.Getenv("DATABASE_DSN")
 	if dbDSN == "" {
 		log.Fatal("DATABASE_DSN environment variable is not set")
-	}
-
-	// Подключаемся к БД
-	db, err := server.ConnectDB()
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
-	}
-	defer db.Close(context.Background())
-
-	// Проверяем соединение с базой данных
-	err = server.PingDB()
-	if err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
 	}
 
 	address := flag.String("a", "", "address to run the HTTP server")
@@ -60,12 +46,12 @@ func main() {
 		*baseURL = "http://localhost:8080"
 	}
 
-	config := server.Config{
+	config := models.Config{
 		Address: *address,
 		BaseURL: *baseURL,
 	}
 
-	server := server.NewServer(config)
+	server := models.NewServer(config)
 
 	// Run the server
 	err = server.Run()

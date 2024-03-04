@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"fiber-apis/internal/models"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
@@ -10,12 +11,12 @@ import (
 )
 
 func TestShortenURLHandler(t *testing.T) {
-	config := Config{
+	config := models.Config{
 		Address: "localhost:8080",
 		BaseURL: "http://localhost:8080",
 	}
 
-	server := NewServer(config)
+	server := models.NewServer(config)
 	server.App.Post("/", server.shortenURLHandler)
 
 	tests := []struct {
@@ -62,12 +63,12 @@ func TestShortenURLHandler(t *testing.T) {
 
 }
 func TestRedirectToOriginalURL(t *testing.T) {
-	config := Config{
+	config := models.Config{
 		Address: "localhost:8080",
 		BaseURL: "http://localhost:8080",
 	}
 
-	server := NewServer(config)
+	server := models.NewServer(config)
 	server.App.Get("/:id", server.redirectToOriginalURL)
 
 	tests := []struct {
@@ -121,11 +122,11 @@ func TestRedirectToOriginalURL(t *testing.T) {
 }
 
 func TestShortenAPIHandler(t *testing.T) {
-	config := Config{
+	config := models.Config{
 		Address: "localhost:8080",
 		BaseURL: "http://localhost:8080",
 	}
-	server := NewServer(config)
+	server := models.NewServer(config)
 	server.App.Post("/api/shorten", server.shortenAPIHandler)
 
 	tests := []struct {

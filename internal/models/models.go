@@ -1,4 +1,4 @@
-package server
+package models
 
 import (
 	"context"
@@ -8,6 +8,16 @@ import (
 	"github.com/sirupsen/logrus"
 	"os"
 )
+
+type Storable interface {
+	urlsStorable
+}
+
+type urlsStorable interface {
+	Get(key string) (string, error)
+	Set(val, pth string) (string, error)
+	Ping() error
+}
 
 type ErrorResponse struct {
 	Error string `json:"error"`
@@ -25,17 +35,17 @@ type Config struct {
 	Address         string
 	BaseURL         string
 	FileStoragePath string
+	DSN             string `env:"DATABASE_DSN"`
 }
 
 type Server struct {
 	Config         Config
-	Storage        map[string]string
+	Storage        models.Config
 	App            *fiber.App
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
-	DB             *pgx.Conn // Добавляем поле для соединения с БД
-	DSN            string
+	DB             *pgx.Conn
 }
 
 type fiberLogger struct {
