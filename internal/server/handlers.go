@@ -10,13 +10,17 @@ import (
 )
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
-	originalURL := string(c.Body())
-	if !isValidURL(originalURL) {
+	var req models.ShortenRequest
+	if err := json.Unmarshal(c.Body(), &req); err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid JSON format")
+	}
+
+	if !isValidURL(req.URL) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, originalURL)
+	s.Storage.SetURL(id, req.URL)
 
 	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
@@ -46,7 +50,7 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req models.ShortenRequest
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
-			Error: "bad request: Invalid json format",
+			Error: "bad request: Invalid JSON format",
 		}
 		return c.Status(http.StatusBadRequest).JSON(errResponse)
 	}
