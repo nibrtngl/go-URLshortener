@@ -1,29 +1,12 @@
 package models
 
-import (
-	"github.com/sirupsen/logrus"
-)
+type Storable interface {
+	GetURL(id string) (string, error)
+	SetURL(id, url string)
+	GetAllKeys() ([]string, error) // Добавлен новый метод для получения всех ключей
+}
 
 // интерфейс, которому должно соответствовать хранилище
-type Storable interface {
-	userStorable
-	GetAllKeys() ([]string, error)
-}
-
-// для таблиц user в бд
-type userStorable interface {
-	GetUrl(id string) (string, error)
-	SetUrl(id, url string)
-	Ping() error
-}
-
-type Storage struct {
-	Data  data
-	Users users
-}
-
-type data map[string]string
-type users map[string][]string
 
 type ErrorResponse struct {
 	Error string `json:"error"`
@@ -42,8 +25,4 @@ type Config struct {
 	BaseURL         string
 	FileStoragePath string
 	DSN             string `env:"DATABASE_DSN" json:"database_dsn"`
-}
-
-type fiberLogger struct {
-	logger *logrus.Logger
 }

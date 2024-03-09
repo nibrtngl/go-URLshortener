@@ -43,7 +43,7 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	}
 
 	for _, key := range keys {
-		url, err := s.Storage.GetUrl(key)
+		url, err := s.Storage.GetURL(key) // Используем GetURL вместо GetUrl
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 		shortURL := entry["short_url"]
 		originalURL := entry["original_url"]
 
-		s.Storage.SetUrl(shortURL, originalURL)
+		s.Storage.SetURL(shortURL, originalURL)
 
 	}
 

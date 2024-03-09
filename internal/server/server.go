@@ -13,14 +13,6 @@ type MyStorage struct {
 	data map[string]string
 }
 
-func (s *MyStorage) GetUrl(id string) (string, error) {
-	return s.GetURL(id)
-}
-
-func (s *MyStorage) SetUrl(id, url string) {
-	s.SetURL(id, url)
-}
-
 func (s *MyStorage) GetURL(id string) (string, error) {
 	url, ok := s.data[id]
 	if !ok {
@@ -34,7 +26,7 @@ func (s *MyStorage) SetURL(id, url string) {
 }
 
 func (s *MyStorage) Ping() error {
-	// Добавьте здесь логику проверки доступности хранилища, если необходимо
+	// Add logic to check storage availability here if needed
 	return nil
 }
 
