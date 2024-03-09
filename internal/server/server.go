@@ -14,6 +14,14 @@ type MyStorage struct {
 }
 
 func (s *MyStorage) GetUrl(id string) (string, error) {
+	return s.GetURL(id)
+}
+
+func (s *MyStorage) SetUrl(id, url string) {
+	s.SetURL(id, url)
+}
+
+func (s *MyStorage) GetURL(id string) (string, error) {
 	url, ok := s.data[id]
 	if !ok {
 		return "", fmt.Errorf("URL not found for ID: %s", id)
@@ -21,12 +29,12 @@ func (s *MyStorage) GetUrl(id string) (string, error) {
 	return url, nil
 }
 
-func (s *MyStorage) SetUrl(id, url string) {
+func (s *MyStorage) SetURL(id, url string) {
 	s.data[id] = url
 }
 
 func (s *MyStorage) Ping() error {
-	// Add logic to check storage availability here if needed
+	// Добавьте здесь логику проверки доступности хранилища, если необходимо
 	return nil
 }
 
