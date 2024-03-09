@@ -13,7 +13,6 @@ type MyStorage struct {
 	data map[string]string
 }
 
-// GetUrl возвращает URL для указанного идентификатора
 func (s *MyStorage) GetUrl(id string) (string, error) {
 	url, ok := s.data[id]
 	if !ok {
@@ -22,20 +21,20 @@ func (s *MyStorage) GetUrl(id string) (string, error) {
 	return url, nil
 }
 
-// SetUrl сохраняет URL для указанного идентификатора
 func (s *MyStorage) SetUrl(id, url string) {
 	s.data[id] = url
 }
 
-// Ping проверяет доступность хранилища
 func (s *MyStorage) Ping() error {
-	// Здесь может быть логика проверки доступности хранилища
+	// Add logic to check storage availability here if needed
 	return nil
 }
 
-// В данной реализации GetAllKeys возвращает пустой список ключей
 func (s *MyStorage) GetAllKeys() ([]string, error) {
-	keys := make([]string, 0)
+	keys := make([]string, 0, len(s.data))
+	for k := range s.data {
+		keys = append(keys, k)
+	}
 	return keys, nil
 }
 
