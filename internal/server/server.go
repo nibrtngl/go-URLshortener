@@ -26,7 +26,6 @@ func (s *MyStorage) SetURL(id, url string) {
 }
 
 func (s *MyStorage) Ping() error {
-	// Add logic to check storage availability here if needed
 	return nil
 }
 
