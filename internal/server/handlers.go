@@ -16,7 +16,7 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetUrl(id, originalURL)
+	s.Storage.SetURL(id, originalURL)
 
 	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
@@ -30,7 +30,7 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
-	originalURL, err := s.Storage.GetUrl(id)
+	originalURL, err := s.Storage.GetURL(id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).SendString("404, not found")
 	}
@@ -56,7 +56,7 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetUrl(id, req.URL)
+	s.Storage.SetURL(id, req.URL)
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
