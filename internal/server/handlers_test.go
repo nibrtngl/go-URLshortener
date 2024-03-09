@@ -3,7 +3,10 @@ package server
 import (
 	"bytes"
 	"fiber-apis/internal/models"
+	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -16,15 +19,20 @@ func TestShortenURLHandler(t *testing.T) {
 		BaseURL: "http://localhost:8080",
 	}
 
-	server := models.NewServer(config)
-	server.App.Post("/", server.shortenURLHandler)
+	server := &Server{
+		Storage:        &MyStorage{data: make(map[string]string)},
+		Cfg:            config,
+		App:            fiber.New(),
+		ShortURLPrefix: config.BaseURL + "/",
+		Logger:         logrus.New(),
+	}
+	server.setupRoutes()
 
 	tests := []struct {
 		name         string
 		path         string
 		expectedCode int
 		URL          string
-		Header       string
 	}{
 		{
 			name:         "get HTTP status 201",
@@ -62,14 +70,21 @@ func TestShortenURLHandler(t *testing.T) {
 	}
 
 }
+
 func TestRedirectToOriginalURL(t *testing.T) {
 	config := models.Config{
 		Address: "localhost:8080",
 		BaseURL: "http://localhost:8080",
 	}
 
-	server := models.NewServer(config)
-	server.App.Get("/:id", server.redirectToOriginalURL)
+	server := &Server{
+		Storage:        &MyStorage{data: make(map[string]string)},
+		Cfg:            config,
+		App:            fiber.New(),
+		ShortURLPrefix: config.BaseURL + "/",
+		Logger:         logrus.New(),
+	}
+	server.setupRoutes()
 
 	tests := []struct {
 		name         string
@@ -77,7 +92,6 @@ func TestRedirectToOriginalURL(t *testing.T) {
 		id           string
 		expectedCode int
 		URL          string
-		Header       string
 	}{
 		{
 			name:         "HTTP status 307",
@@ -101,8 +115,8 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			URL:          "",
 		},
 	}
-	server.Storage["invalid_id"] = "!$#09"
-	server.Storage["1"] = "http://yandex.ru"
+	server.Storage.(*MyStorage).data["invalid_id"] = "!$#09"
+	server.Storage.(*MyStorage).data["1"] = "http://yandex.ru"
 
 	for _, test := range tests {
 
@@ -126,8 +140,14 @@ func TestShortenAPIHandler(t *testing.T) {
 		Address: "localhost:8080",
 		BaseURL: "http://localhost:8080",
 	}
-	server := models.NewServer(config)
-	server.App.Post("/api/shorten", server.shortenAPIHandler)
+	server := &Server{
+		Storage:        &MyStorage{data: make(map[string]string)},
+		Cfg:            config,
+		App:            fiber.New(),
+		ShortURLPrefix: config.BaseURL + "/",
+		Logger:         logrus.New(),
+	}
+	server.setupRoutes()
 
 	tests := []struct {
 		name           string
@@ -160,6 +180,14 @@ func TestShortenAPIHandler(t *testing.T) {
 		}
 		assert.Equalf(t, "application/json", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedStatus, resp.StatusCode, test.name)
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Errorf("Error reading response body: %s", err)
+			continue
+		}
+
+		assert.Equalf(t, test.expectedResult, string(body), test.name)
 
 		resp.Body.Close()
 	}
