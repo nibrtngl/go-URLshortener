@@ -2,13 +2,26 @@ package main
 
 import (
 	"fiber-apis/internal/models"
+	"fiber-apis/internal/server"
 	"flag"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"log"
 	"os"
 )
 
 func main() {
+
+	logger := logrus.New()
+
+	// Устанавливаем формат вывода
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
+	// Устанавливаем уровень логирования
+	logger.SetLevel(logrus.InfoLevel)
+
 	// Получаем строку подключения к БД из переменной окружения
 	dbDSN := os.Getenv("DATABASE_DSN")
 	if dbDSN == "" {
@@ -47,15 +60,16 @@ func main() {
 	}
 
 	config := models.Config{
-		Address: *address,
-		BaseURL: *baseURL,
+		Address:         *address,
+		BaseURL:         *baseURL,
+		FileStoragePath: *fileStoragePath,
 	}
 
-	server := models.NewServer(config)
+	server := server.NewServer(config)
 
-	// Run the server
-	err = server.Run()
+	// Запускаем сервер
+	err := server.Run()
 	if err != nil {
-		fmt.Printf("Error running server: %v", err)
+		logger.Fatalf("Error running server: %v", err)
 	}
 }

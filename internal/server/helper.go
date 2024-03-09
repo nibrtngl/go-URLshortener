@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/url"
 	"os"
@@ -26,7 +27,7 @@ func generateShortID() string {
 	return string(b)
 }
 
-func (s *models.Server) saveStorageToFile(filePath string) error {
+func (s *Server) saveStorageToFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
@@ -34,11 +35,23 @@ func (s *models.Server) saveStorageToFile(filePath string) error {
 	defer file.Close()
 
 	writer := bufio.NewWriter(file)
-	for key, value := range s.Storage {
+
+	// Получаем все ключи из хранилища
+	keys, err := s.Storage.GetAllKeys()
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		url, err := s.Storage.GetUrl(key)
+		if err != nil {
+			return err
+		}
+
 		entry := map[string]string{
 			"uuid":         key,
-			"short_url":    value,
-			"original_url": value,
+			"short_url":    url,
+			"original_url": url,
 		}
 
 		entryJSON, err := json.Marshal(entry)
@@ -60,7 +73,7 @@ func (s *models.Server) saveStorageToFile(filePath string) error {
 	return nil
 }
 
-func (s *models.Server) loadStorageFromFile(filePath string) error {
+func (s *Server) loadStorageFromFile(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -75,12 +88,11 @@ func (s *models.Server) loadStorageFromFile(filePath string) error {
 			return err
 		}
 
-		uuid := entry["uuid"]
 		shortURL := entry["short_url"]
 		originalURL := entry["original_url"]
 
-		s.Storage[shortURL] = originalURL
-		s.Storage[uuid] = shortURL
+		s.Storage.SetUrl(shortURL, originalURL)
+
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -88,4 +100,13 @@ func (s *models.Server) loadStorageFromFile(filePath string) error {
 	}
 
 	return nil
+}
+
+type fiberLogger struct {
+	logger *logrus.Logger
+}
+
+func (f *fiberLogger) Write(p []byte) (n int, err error) {
+	f.logger.Info(string(p)) // Пример: логгирование как Info
+	return len(p), nil
 }

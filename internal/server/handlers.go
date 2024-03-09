@@ -9,16 +9,16 @@ import (
 	"net/url"
 )
 
-func (s *models.Server) shortenURLHandler(c *fiber.Ctx) error {
+func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	originalURL := string(c.Body())
 	if !isValidURL(originalURL) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
 	id := generateShortID()
-	s.Storage[id] = originalURL
+	s.Storage.SetUrl(id, originalURL)
 
-	err := s.saveStorageToFile(s.Config.FileStoragePath)
+	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
 		logrus.Errorf("Failed to save storage to file: %v", err)
 	}
@@ -28,10 +28,10 @@ func (s *models.Server) shortenURLHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
 
-func (s *models.Server) redirectToOriginalURL(c *fiber.Ctx) error {
+func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
-	originalURL, exist := s.Storage[id]
-	if !exist {
+	originalURL, err := s.Storage.GetUrl(id)
+	if err != nil {
 		return c.Status(http.StatusNotFound).SendString("404, not found")
 	}
 	if !isValidURL(originalURL) {
@@ -42,7 +42,7 @@ func (s *models.Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	}
 }
 
-func (s *models.Server) shortenAPIHandler(c *fiber.Ctx) error {
+func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req models.ShortenRequest
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
@@ -56,7 +56,7 @@ func (s *models.Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage[id] = req.URL
+	s.Storage.SetUrl(id, req.URL)
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
@@ -65,12 +65,4 @@ func (s *models.Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(http.StatusCreated).JSON(resp)
-}
-
-func (s *models.Server) pingHandler(c *fiber.Ctx) error {
-	if s.DSN == "" {
-		s.Logger.Println("Database connection error: DSN is empty")
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
-	}
-	return c.SendStatus(fiber.StatusOK)
 }
