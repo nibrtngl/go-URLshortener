@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fiber-apis/internal/models"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -65,4 +66,12 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(http.StatusCreated).JSON(resp)
+}
+
+func (s *Server) pingHandler(c *fiber.Ctx) error {
+	err := s.Storage.Ping()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to ping the database: %v", err))
+	}
+	return c.SendStatus(fiber.StatusOK)
 }

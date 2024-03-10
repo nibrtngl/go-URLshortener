@@ -94,6 +94,7 @@ func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
+	s.App.Get("/ping", s.pingHandler) // Добавлен обработчик для маршрута /ping
 }
 
 func (s *Server) Run() error {

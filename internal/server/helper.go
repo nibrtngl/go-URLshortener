@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"encoding/json"
+	"fiber-apis/internal/models"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/url"
@@ -109,4 +110,13 @@ type fiberLogger struct {
 func (f *fiberLogger) Write(p []byte) (n int, err error) {
 	f.logger.Info(string(p)) // Пример: логгирование как Info
 	return len(p), nil
+}
+
+func InitLogger() {
+	models.Logger = logrus.New()
+	models.Logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+	models.Logger.SetOutput(os.Stdout)
+	models.Logger.SetLevel(logrus.InfoLevel)
 }

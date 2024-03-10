@@ -4,10 +4,8 @@ import (
 	"database/sql"
 )
 
-type Database struct {
-	Conn *sql.DB
-}
+var db *sql.DB
 
-func (b *Database) Ping() error {
-	return b.Conn.Ping()
+func SetDB(database *sql.DB) {
+	db = database
 }
