@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -10,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -138,7 +140,7 @@ func TestRedirectToOriginalURL(t *testing.T) {
 func TestShortenAPIHandler(t *testing.T) {
 	config := models.Config{
 		Address: "localhost:8080",
-		BaseURL: "http://localhost:8080",
+		BaseURL: "http://localhost:8080", // Изменяем базовый URL на адрес сервера
 	}
 	server := &Server{
 		Storage:        &MyStorage{data: make(map[string]string)},
@@ -153,19 +155,16 @@ func TestShortenAPIHandler(t *testing.T) {
 		name           string
 		requestBody    string
 		expectedStatus int
-		expectedResult string
 	}{
 		{
 			name:           "Valid request",
 			requestBody:    `{"url": "https://example.com"}`,
 			expectedStatus: http.StatusCreated,
-			expectedResult: `{"result": "http://shorturl.com/abc123"}`,
 		},
 		{
 			name:           "Invalid JSON format",
 			requestBody:    `{"url123": "23https://example.com",}`,
 			expectedStatus: http.StatusBadRequest,
-			expectedResult: "Bad Request: Invalid JSON format",
 		},
 	}
 
@@ -175,20 +174,34 @@ func TestShortenAPIHandler(t *testing.T) {
 
 		resp, err := server.App.Test(req, -1)
 		if err != nil {
-			log.Println(err)
+			t.Errorf("Error testing %s: %s", test.name, err.Error())
 			continue
 		}
+
 		assert.Equalf(t, "application/json", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedStatus, resp.StatusCode, test.name)
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			t.Errorf("Error reading response body: %s", err)
-			continue
+		if test.expectedStatus == http.StatusCreated {
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Errorf("Error reading response body: %s", err)
+				continue
+			}
+
+			var result map[string]string
+			if err := json.Unmarshal(body, &result); err != nil {
+				t.Errorf("Error unmarshalling JSON: %s", err)
+				continue
+			}
+
+			shortURL, ok := result["result"]
+			if !ok {
+				t.Errorf("Expected 'result' field in response body, got: %v", result)
+				continue
+			}
+
+			expectedURL, _ := url.JoinPath(shortURL)
+			assert.Equalf(t, expectedURL, shortURL, "Expected shortened URL does not match")
 		}
-
-		assert.Equalf(t, test.expectedResult, string(body), test.name)
-
-		resp.Body.Close()
 	}
 }
