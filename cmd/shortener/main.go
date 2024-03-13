@@ -1,7 +1,9 @@
+// main.go
 package main
 
 import (
 	"context"
+	"fiber-apis/internal/db"
 	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
 	"flag"
@@ -27,7 +29,14 @@ func main() {
 
 	logger.SetLevel(logrus.InfoLevel)
 
-	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseDSN)
+	// Получение параметров подключения к базе данных
+	dbHost, dbPort, dbUser, dbPassword, dbName := db.GetDBConnectionParams()
+
+	// Формирование строки подключения к базе данных
+	dbDSN := "postgres://" + dbUser + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/" + dbName
+
+	// Подключение к базе данных
+	poolConfig, err := pgxpool.ParseConfig(dbDSN)
 	if err != nil {
 		log.Fatalf("Error parsing database DSN: %v", err)
 	}
@@ -51,14 +60,6 @@ func main() {
 		*fileStoragePath = "/tmp/short-url-db.json"
 	}
 
-	if envAddress := os.Getenv("SERVER_ADDRESS"); envAddress != "" {
-		*address = envAddress
-	}
-	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-		*baseURL = envBaseURL
-	}
-
-	// Set default values if not provided
 	if *address == "" {
 		*address = "localhost:8080"
 	}
