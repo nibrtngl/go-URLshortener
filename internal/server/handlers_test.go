@@ -141,7 +141,7 @@ func TestRedirectToOriginalURL(t *testing.T) {
 func TestShortenAPIHandler(t *testing.T) {
 	config := models.Config{
 		Address: "localhost:8080",
-		BaseURL: "http://localhost:8080", // Изменяем базовый URL на адрес сервера
+		BaseURL: "http://localhost:8080", //
 	}
 	server := &Server{
 		Storage:        &MyStorage{data: make(map[string]string)},
