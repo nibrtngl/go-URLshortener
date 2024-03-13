@@ -66,9 +66,7 @@ func main() {
 
 	server := server.NewServer(config, pool)
 
-	// Запускаем сервер
-	err = server.Run()
-	if err != nil {
+	if err := server.Run(); err != nil {
 		logger.Fatalf("Error running server: %v", err)
 	}
 }
