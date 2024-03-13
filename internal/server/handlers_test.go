@@ -129,6 +129,8 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			t.Errorf("Error testing %s: %s", test.name, err.Error())
 			continue
 		}
+		defer resp.Body.Close()
+
 		assert.Equalf(t, test.URL, resp.Header.Get("Location"), "unexpected redirect URL")
 		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
