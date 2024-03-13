@@ -51,6 +51,14 @@ func main() {
 		*fileStoragePath = "/tmp/short-url-db.json"
 	}
 
+	if envAddress := os.Getenv("SERVER_ADDRESS"); envAddress != "" {
+		*address = envAddress
+	}
+	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+		*baseURL = envBaseURL
+	}
+
+	// Set default values if not provided
 	if *address == "" {
 		*address = "localhost:8080"
 	}
@@ -66,7 +74,9 @@ func main() {
 
 	server := server.NewServer(config, pool)
 
-	if err := server.Run(); err != nil {
+	// Запускаем сервер
+	err = server.Run()
+	if err != nil {
 		logger.Fatalf("Error running server: %v", err)
 	}
 }
