@@ -41,6 +41,9 @@ func main() {
 		log.Fatalf("Error parsing database DSN: %v", err)
 	}
 
+	// Используем IPv4-адрес 127.0.0.1
+	poolConfig.ConnConfig.Host = "127.0.0.1"
+
 	pool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 	if err != nil {
 		log.Fatalf("Error connecting to the database: %v", err)
