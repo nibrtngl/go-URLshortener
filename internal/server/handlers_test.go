@@ -129,7 +129,6 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			t.Errorf("Error testing %s: %s", test.name, err.Error())
 			continue
 		}
-		defer resp.Body.Close()
 
 		assert.Equalf(t, test.URL, resp.Header.Get("Location"), "unexpected redirect URL")
 		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
@@ -201,6 +200,7 @@ func TestShortenAPIHandler(t *testing.T) {
 				t.Errorf("Expected 'result' field in response body, got: %v", result)
 				continue
 			}
+			defer resp.Body.Close()
 
 			expectedURL, _ := url.JoinPath(shortURL)
 			assert.Equalf(t, expectedURL, shortURL, "Expected shortened URL does not match")
