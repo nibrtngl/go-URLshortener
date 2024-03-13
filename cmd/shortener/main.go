@@ -1,4 +1,3 @@
-// main.go
 package main
 
 import (
@@ -18,47 +17,35 @@ func main() {
 	var cfg models.Config
 
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("Error Parsing Environment variables: %v", err)
+		log.Fatalf("Ошибка при парсинге переменных окружения: %v", err)
 	}
 
 	logger := logrus.New()
-
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
 	})
-
 	logger.SetLevel(logrus.InfoLevel)
 
-	// Получение параметров подключения к базе данных
-	dbHost, dbPort, dbUser, dbPassword, dbName := db.GetDBConnectionParams()
-
-	// Формирование строки подключения к базе данных
-	dbDSN := "postgres://" + dbUser + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/" + dbName
-
-	// Подключение к базе данных
-	poolConfig, err := pgxpool.ParseConfig(dbDSN)
+	poolConfig, err := db.GetDBConnectionParams(&cfg)
 	if err != nil {
-		log.Fatalf("Error parsing database DSN: %v", err)
+		log.Fatalf("Ошибка при получении параметров подключения к базе данных: %v", err)
 	}
-
-	// Используем IPv4-адрес 127.0.0.1
-	poolConfig.ConnConfig.Host = "127.0.0.1"
 
 	pool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 	if err != nil {
-		log.Fatalf("Error connecting to the database: %v", err)
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
 	}
 	defer pool.Close()
 
-	address := flag.String("a", "", "address to run the HTTP server")
-	baseURL := flag.String("b", "", "base URL for the shortened URL")
-	fileStoragePath := flag.String("f", "", "path to the file storage")
+	address := flag.String("a", "", "адрес для запуска HTTP-сервера")
+	baseURL := flag.String("b", "", "базовый URL для сокращенных URL")
+	dbDSN := flag.String("d", "", "строка подключения к базе данных")
+	fileStoragePath := flag.String("f", "", "путь к файлу для хранения данных")
 	flag.Parse()
 
 	if *fileStoragePath == "" {
 		*fileStoragePath = os.Getenv("FILE_STORAGE_PATH")
 	}
-
 	if *fileStoragePath == "" {
 		*fileStoragePath = "/tmp/short-url-db.json"
 	}
@@ -70,6 +57,13 @@ func main() {
 		*baseURL = "http://localhost:8080"
 	}
 
+	if *dbDSN == "" {
+		*dbDSN = os.Getenv("DATABASE_DSN")
+	}
+	if *dbDSN == "" {
+		log.Fatal("Не удалось получить параметры подключения к базе данных")
+	}
+
 	config := models.Config{
 		Address:         *address,
 		BaseURL:         *baseURL,
@@ -78,9 +72,9 @@ func main() {
 
 	server := server.NewServer(config, pool)
 
-	// Запускаем сервер
-	err = server.Run()
-	if err != nil {
-		logger.Fatalf("Error running server: %v", err)
+	logger.Infof("Запуск сервера на адресе %s", config.Address)
+
+	if err := server.Run(); err != nil {
+		logger.Fatalf("Ошибка запуска сервера: %v", err)
 	}
 }
