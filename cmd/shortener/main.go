@@ -17,7 +17,7 @@ func main() {
 	var cfg models.Config
 
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("Error Parsing Environment variables", err)
+		log.Fatalf("Error Parsing Environment variables: %v", err)
 	}
 
 	logger := logrus.New()
