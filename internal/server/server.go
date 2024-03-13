@@ -45,7 +45,7 @@ type Server struct {
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
-	DBPool         *pgxpool.Pool // Добавляем пул соединений с базой данных
+	DBPool         *pgxpool.Pool // пул соединений с базой данных
 }
 
 func NewServer(cfg models.Config, dbPool *pgxpool.Pool) *Server {
@@ -72,16 +72,15 @@ func NewServer(cfg models.Config, dbPool *pgxpool.Pool) *Server {
 	logger := logrus.New()
 
 	server := &Server{
-		Cfg:            cfg,     // Исправлена ссылка на Config
-		Storage:        storage, // Заменено на конкретную реализацию хранилища
+		Cfg:            cfg,
+		Storage:        storage,
 		App:            log,
-		ShortURLPrefix: cfg.BaseURL + "/", // Исправлено на Cfg.BaseURL
+		ShortURLPrefix: cfg.BaseURL + "/",
 		Logger:         logger,
 	}
 
 	server.setupRoutes()
 
-	// При запуске сервера проверяем, есть ли файл для загрузки данных
 	if _, err := os.Stat(cfg.FileStoragePath); !os.IsNotExist(err) {
 		err := server.loadStorageFromFile(cfg.FileStoragePath)
 		if err != nil {
@@ -96,7 +95,7 @@ func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
-	s.App.Get("/ping", s.pingHandler) // Добавлен обработчик для маршрута /ping
+	s.App.Get("/ping", s.pingHandler)
 }
 
 func (s *Server) Run() error {

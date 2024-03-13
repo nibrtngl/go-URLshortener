@@ -5,7 +5,6 @@ import (
 	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
 	"flag"
-	"fmt"
 	"github.com/caarlos0/env/v10"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
@@ -22,12 +21,10 @@ func main() {
 
 	logger := logrus.New()
 
-	// Устанавливаем формат вывода
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
 	})
 
-	// Устанавливаем уровень логирования
 	logger.SetLevel(logrus.InfoLevel)
 
 	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseDSN)
@@ -54,17 +51,6 @@ func main() {
 		*fileStoragePath = "/tmp/short-url-db.json"
 	}
 
-	fmt.Println("File storage path:", *fileStoragePath)
-
-	// Read environment variables
-	if envAddress := os.Getenv("SERVER_ADDRESS"); envAddress != "" {
-		*address = envAddress
-	}
-	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-		*baseURL = envBaseURL
-	}
-
-	// Set default values if not provided
 	if *address == "" {
 		*address = "localhost:8080"
 	}
