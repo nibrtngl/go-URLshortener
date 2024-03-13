@@ -1,6 +1,8 @@
 package models
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/sirupsen/logrus"
+)
 
 // интерфейс, которому должно соответствовать хранилище
 type Storable interface {
@@ -22,16 +24,11 @@ type ShortenRequest struct {
 	URL string `json:"url"`
 }
 
-var (
-	DBDSN      string
-	ListenAddr string
-)
-
 var Logger *logrus.Logger
 
 type Config struct {
-	Address         string
-	BaseURL         string
-	FileStoragePath string
-	DSN             string `env:"DATABASE_DSN" json:"database_dsn"`
+	Address         string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
+	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"./tmp/short-url-db.json"`
+	DatabaseDSN     string `env:"DATABASE_DSN" envDefault:"host=localhost port=5432 dbname=postgres user=postgres password=xxxxxxx connect_timeout=10 sslmode=disable"`
 }

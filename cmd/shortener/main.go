@@ -1,16 +1,24 @@
 package main
 
 import (
+	"context"
 	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
 	"flag"
 	"fmt"
+	"github.com/caarlos0/env/v10"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"log"
 	"os"
 )
 
 func main() {
+	var cfg models.Config
+
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatalf("Error Parsing Environment variables", err)
+	}
 
 	logger := logrus.New()
 
@@ -22,11 +30,16 @@ func main() {
 	// Устанавливаем уровень логирования
 	logger.SetLevel(logrus.InfoLevel)
 
-	// Получаем строку подключения к БД из переменной окружения
-	dbDSN := os.Getenv("DATABASE_DSN")
-	if dbDSN == "" {
-		log.Fatal("DATABASE_DSN environment variable is not set")
+	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseDSN)
+	if err != nil {
+		log.Fatalf("Error parsing database DSN: %v", err)
 	}
+
+	pool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
+	if err != nil {
+		log.Fatalf("Error connecting to the database: %v", err)
+	}
+	defer pool.Close()
 
 	address := flag.String("a", "", "address to run the HTTP server")
 	baseURL := flag.String("b", "", "base URL for the shortened URL")
@@ -65,10 +78,10 @@ func main() {
 		FileStoragePath: *fileStoragePath,
 	}
 
-	server := server.NewServer(config)
+	server := server.NewServer(config, pool)
 
 	// Запускаем сервер
-	err := server.Run()
+	err = server.Run()
 	if err != nil {
 		logger.Fatalf("Error running server: %v", err)
 	}

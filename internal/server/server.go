@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"os"
 )
@@ -44,9 +45,10 @@ type Server struct {
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
+	DBPool         *pgxpool.Pool // Добавляем пул соединений с базой данных
 }
 
-func NewServer(cfg models.Config) *Server {
+func NewServer(cfg models.Config, dbPool *pgxpool.Pool) *Server {
 
 	storage := &MyStorage{
 		data: make(map[string]string),
