@@ -27,7 +27,7 @@ func main() {
 
 	logger.SetLevel(logrus.InfoLevel)
 
-	poolConfig, err := pgxpool.ParseConfig(cfg.DATABASE_DSN)
+	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseDSN)
 	if err != nil {
 		log.Fatalf("Error parsing database DSN: %v", err)
 	}
