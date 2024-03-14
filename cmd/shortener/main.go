@@ -5,6 +5,7 @@ import (
 	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
 	"flag"
+	"fmt"
 	"github.com/caarlos0/env/v10"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
@@ -13,6 +14,13 @@ import (
 )
 
 func main() {
+
+	err := os.Setenv("DATABASE_DSN", "host=localhost port=5432 user=postgres dbname=postgres sslmode=disable")
+	if err != nil {
+		fmt.Println("Ошибка при установке переменной окружения:", err)
+		return
+	}
+
 	var cfg models.Config
 
 	if err := env.Parse(&cfg); err != nil {
