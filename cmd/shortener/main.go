@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fiber-apis/internal/db"
 	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
 	"flag"
@@ -26,7 +25,7 @@ func main() {
 	})
 	logger.SetLevel(logrus.InfoLevel)
 
-	poolConfig, err := db.GetDBConnectionParams(&cfg)
+	poolConfig, err := getDBConnectionParams(&cfg)
 	if err != nil {
 		log.Fatalf("Ошибка при получении параметров подключения к базе данных: %v", err)
 	}
@@ -68,6 +67,7 @@ func main() {
 		Address:         *address,
 		BaseURL:         *baseURL,
 		FileStoragePath: *fileStoragePath,
+		DatabaseDSN:     *dbDSN,
 	}
 
 	server := server.NewServer(config, pool)
@@ -77,4 +77,12 @@ func main() {
 	if err := server.Run(); err != nil {
 		logger.Fatalf("Ошибка запуска сервера: %v", err)
 	}
+}
+
+func getDBConnectionParams(cfg *models.Config) (*pgxpool.Config, error) {
+	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseDSN)
+	if err != nil {
+		return nil, err
+	}
+	return poolConfig, nil
 }
