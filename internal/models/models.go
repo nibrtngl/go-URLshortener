@@ -30,5 +30,5 @@ type Config struct {
 	Address         string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"./tmp/short-url-db.json"`
-	DatabaseDSN     string `env:"DATABASE_DSN" envDefault:"postgres://postgres:@localhost:5432/url-db"`
+	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
