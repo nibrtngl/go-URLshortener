@@ -45,7 +45,7 @@ type Server struct {
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
-	DBPool         *pgxpool.Pool // пул соединений с базой данных
+	DBPool         *pgxpool.Pool
 }
 
 func NewServer(cfg models.Config, dbPool *pgxpool.Pool) *Server {
