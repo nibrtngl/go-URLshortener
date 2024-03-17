@@ -37,13 +37,14 @@ func (s *Server) saveStorageToFile(filePath string) error {
 
 	writer := bufio.NewWriter(file)
 
+	// Получаем все ключи из хранилища
 	keys, err := s.Storage.GetAllKeys()
 	if err != nil {
 		return err
 	}
 
 	for _, key := range keys {
-		url, err := s.Storage.GetURL(key)
+		url, err := s.Storage.GetURL(key) // Используем GetURL вместо GetUrl
 		if err != nil {
 			return err
 		}
@@ -107,7 +108,7 @@ type fiberLogger struct {
 }
 
 func (f *fiberLogger) Write(p []byte) (n int, err error) {
-	f.logger.Info(string(p))
+	f.logger.Info(string(p)) // Пример: логгирование как Info
 	return len(p), nil
 }
 

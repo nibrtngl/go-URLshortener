@@ -45,14 +45,11 @@ type Server struct {
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
-	DBPool         *pgxpool.Pool
+	DBPool         *pgxpool.Pool // пул соединений с базой данных
 }
 
-func NewServer(cfg models.Config, dbPool *pgxpool.Pool) *Server {
+func NewServer(cfg models.Config, storage models.Storable) *Server {
 
-	storage := &MyStorage{
-		data: make(map[string]string),
-	}
 	// Исправлены ссылки на Config
 	if cfg.FileStoragePath == "" {
 		fileStoragePath := os.Getenv("FILE_STORAGE_PATH")

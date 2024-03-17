@@ -4,7 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// интерфейс, которому должно соответствовать хранилище
+// Storable is the interface that must be implemented by any storage backend.
 type Storable interface {
 	GetURL(id string) (string, error)
 	SetURL(id, url string)
@@ -30,5 +30,5 @@ type Config struct {
 	Address         string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"./tmp/short-url-db.json"`
-	DatabaseDSN     string `env:"DATABASE_DSN"`
+	DatabaseDSN     string `env:"DATABASE_DSN" envDefault:""`
 }
