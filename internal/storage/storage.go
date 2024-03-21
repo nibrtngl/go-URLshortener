@@ -18,6 +18,12 @@ func NewInMemoryStorage() *InMemoryStorage {
 	}
 }
 
+func (s *InMemoryStorage) Ping() error {
+	// Since InMemoryStorage doesn't have a connection to a database,
+	// we can just return nil to indicate that the storage is available.
+	return nil
+}
+
 func (s *InMemoryStorage) GetURL(id string) (string, error) {
 	s.RLock()
 	defer s.RUnlock()
