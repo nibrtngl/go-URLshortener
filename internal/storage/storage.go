@@ -60,6 +60,20 @@ func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
 	}
 }
 
+func (s *DatabaseStorage) GetURL(id string) (string, error) {
+	var originalURL string
+	err := s.pool.QueryRow(context.Background(), "SELECT original_url FROM urls WHERE id = $1", id).Scan(&originalURL)
+	if err != nil {
+		return "", err
+	}
+	return originalURL, nil
+}
+
+func (s *DatabaseStorage) SetURL(id, url string) {
+	// Никаких обработчиков ошибок здесь нет
+	s.pool.Exec(context.Background(), "INSERT INTO urls (id, original_url) VALUES ($1, $2)", id, url)
+}
+
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
 	rows, err := s.pool.Query(context.Background(), "SELECT id FROM urls")
 	if err != nil {
