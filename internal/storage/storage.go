@@ -70,10 +70,7 @@ func (s *DatabaseStorage) GetURL(id string) (string, error) {
 }
 
 func (s *DatabaseStorage) SetURL(id, url string) {
-	_, err := s.pool.Exec(context.Background(), "INSERT INTO urls (id, original_url) VALUES ($1, $2)", id, url)
-	if err != nil {
-		// Handle error
-	}
+	s.pool.Exec(context.Background(), "INSERT INTO urls (id, original_url) VALUES ($1, $2)", id, url)
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
