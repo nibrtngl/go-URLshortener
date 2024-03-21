@@ -44,10 +44,6 @@ func (s *InMemoryStorage) GetAllKeys() ([]string, error) {
 	return keys, nil
 }
 
-func (s *InMemoryStorage) Ping() error {
-	return nil // In-memory storage doesn't need to ping a database
-}
-
 type DatabaseStorage struct {
 	pool *pgxpool.Pool
 }
@@ -59,19 +55,43 @@ func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
 }
 
 func (s *DatabaseStorage) GetURL(id string) (string, error) {
-	// Implement the query to get the URL from the database.
-	// Return the URL or an error if the query fails.
-	return "", nil // Placeholder
+	var originalURL string
+	err := s.pool.QueryRow(context.Background(), "SELECT original_url FROM urls WHERE id = $1", id).Scan(&originalURL)
+	if err != nil {
+		return "", err
+	}
+	return originalURL, nil
 }
 
 func (s *DatabaseStorage) SetURL(id, url string) {
-	// Implement the query to store the URL in the database.
+	_, err := s.pool.Exec(context.Background(), "INSERT INTO urls (id, original_url) VALUES ($1, $2)", id, url)
+	if err != nil {
+		// Handle error
+	}
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
-	// Implement the query to get all keys from the database.
-	// Return the keys or an error if the query fails.
-	return nil, nil // Placeholder
+	rows, err := s.pool.Query(context.Background(), "SELECT id FROM urls")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var keys []string
+	for rows.Next() {
+		var key string
+		err := rows.Scan(&key)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, key)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return keys, nil
 }
 
 func (s *DatabaseStorage) Ping() error {
