@@ -4,6 +4,7 @@ import (
 	"context"
 	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
+	"fiber-apis/internal/storage"
 	"flag"
 	"github.com/caarlos0/env/v10"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -16,7 +17,7 @@ func main() {
 	var cfg models.Config
 
 	if err := env.Parse(&cfg); err != nil {
-		logrus.Errorf("Ошибка при парсинге переменных окружения: %v", err)
+		log.Fatalf("Ошибка при парсинге переменных окружения: %v", err)
 	}
 
 	logger := logrus.New()
@@ -63,10 +64,13 @@ func main() {
 
 		pool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 		if err != nil {
-			logrus.Errorf("Ошибка подключения к базе данных: %v", err)
+			log.Fatalf("Ошибка подключения к базе данных: %v", err)
 		}
 		defer pool.Close()
 
+		storable = storage.NewDatabaseStorage(pool)
+	} else {
+		storable = storage.NewInMemoryStorage()
 	}
 
 	server := server.NewServer(config, storable)
@@ -74,6 +78,6 @@ func main() {
 	logger.Infof("Запуск сервера на адресе %s", cfg.Address)
 
 	if err := server.Run(); err != nil {
-		logrus.Errorf("Ошибка запуска сервера: %v", err)
+		logger.Fatalf("Ошибка запуска сервера: %v", err)
 	}
 }

@@ -1,54 +1,28 @@
 package server
 
 import (
-	"context"
-	"errors"
 	"fiber-apis/internal/models"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"os"
-	"sync"
 )
 
 type MyStorage struct {
 	data map[string]string
-	db   *pgxpool.Pool
-	mu   sync.RWMutex
-}
-
-func (s *MyStorage) InitDB(ctx context.Context, connString string) error {
-	// Подключаемся к базе данных PostgreSQL с помощью pgx.
-	db, err := pgxpool.Connect(ctx, connString)
-	if err != nil {
-		return err
-	}
-
-	// Проверяем, что соединение с базой данных установлено корректно.
-	err = db.Ping(ctx)
-	if err != nil {
-		return err
-	}
-
-	s.db = db
-	return nil
 }
 
 func (s *MyStorage) GetURL(id string) (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	originalURL, ok := s.data[id]
+	url, ok := s.data[id]
 	if !ok {
-		return "", errors.New("URL not found")
+		return "", fmt.Errorf("URL not found for ID: %s", id)
 	}
-	return originalURL, nil
+	return url, nil
 }
 
-// SetURL сохраняет оригинальный URL и возвращает сокращенный.
 func (s *MyStorage) SetURL(id, url string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.data[id] = url
 }
 

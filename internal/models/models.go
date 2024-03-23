@@ -1,7 +1,6 @@
 package models
 
 import (
-	"context"
 	"github.com/sirupsen/logrus"
 )
 
@@ -11,10 +10,6 @@ type Storable interface {
 	SetURL(id, url string)
 	GetAllKeys() ([]string, error)
 	Ping() error
-	InitDB(ctx context.Context, connString string) error
-}
-type MyStorage struct {
-	data map[string]string
 }
 
 type ErrorResponse struct {
