@@ -1,103 +1,50 @@
-package storage
+package server
 
 import (
-	"context"
 	"errors"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"sync"
 )
 
-type InMemoryStorage struct {
+type MyStorage struct {
 	sync.RWMutex
-	urls map[string]string
+	data map[string]string
 }
 
-func NewInMemoryStorage() *InMemoryStorage {
-	return &InMemoryStorage{
-		urls: make(map[string]string),
-	}
-}
-
-func (s *InMemoryStorage) Ping() error {
-	// Since InMemoryStorage doesn't have a connection to a database,
-	// we can just return nil to indicate that the storage is available.
-	return nil
-}
-
-func (s *InMemoryStorage) GetURL(id string) (string, error) {
+func (s *MyStorage) GetURL(id string) (string, error) {
 	s.RLock()
 	defer s.RUnlock()
-	originalURL, ok := s.urls[id]
+	originalURL, ok := s.data[id]
 	if !ok {
 		return "", errors.New("URL not found")
 	}
 	return originalURL, nil
 }
 
-func (s *InMemoryStorage) SetURL(id, url string) {
+func (s *MyStorage) SetURL(id, url string) {
 	s.Lock()
 	defer s.Unlock()
-	s.urls[id] = url
+	s.data[id] = url
 }
 
-func (s *InMemoryStorage) GetAllKeys() ([]string, error) {
+func (s *MyStorage) GetAllKeys() ([]string, error) {
 	s.RLock()
 	defer s.RUnlock()
-	keys := make([]string, 0, len(s.urls))
-	for k := range s.urls {
+	keys := make([]string, 0, len(s.data))
+	for k := range s.data {
 		keys = append(keys, k)
 	}
 	return keys, nil
 }
 
-type DatabaseStorage struct {
-	pool *pgxpool.Pool
+func (s *MyStorage) Ping() error {
+
+	return nil
 }
 
-func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
-	return &DatabaseStorage{
-		pool: pool,
-	}
-}
-
-func (s *DatabaseStorage) GetURL(id string) (string, error) {
-	var originalURL string
-	err := s.pool.QueryRow(context.Background(), "SELECT original_url FROM urls WHERE id = $1", id).Scan(&originalURL)
-	if err != nil {
-		return "", err
-	}
-	return originalURL, nil
-}
-
-func (s *DatabaseStorage) SetURL(id, url string) {
-	// Никаких обработчиков ошибок здесь нет
-	s.pool.Exec(context.Background(), "INSERT INTO urls (id, original_url) VALUES ($1, $2)", id, url)
-}
-
-func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
-	rows, err := s.pool.Query(context.Background(), "SELECT id FROM urls")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var keys []string
-	for rows.Next() {
-		var key string
-		err := rows.Scan(&key)
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, key)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return keys, nil
-}
-
-func (s *DatabaseStorage) Ping() error {
-	return s.pool.Ping(context.Background())
+// InitDB is a placeholder method to satisfy the Storable interface.
+// In a real-world scenario, it would initialize the database connection.
+func (s *MyStorage) InitDB() error {
+	// For demonstration purposes, we'll just return nil.
+	// In a real implementation, you would initialize the database connection.
+	return nil
 }
