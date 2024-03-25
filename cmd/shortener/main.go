@@ -48,7 +48,7 @@ func main() {
 			storable = server.NewInternalStorage()
 		} else {
 			defer pool.Close()
-			storable = server.NewDatabaseStorage(pool)
+			storable = server.NewDatabaseStorage(pool) // 123
 		}
 	} else {
 		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
