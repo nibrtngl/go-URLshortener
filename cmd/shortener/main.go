@@ -4,7 +4,6 @@ import (
 	"context"
 	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
-	"fiber-apis/internal/storage"
 	"flag"
 	"github.com/caarlos0/env/v10"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -46,14 +45,14 @@ func main() {
 		pool, err := pgxpool.Connect(ctx, dbDSN)
 		if err != nil {
 			logger.Errorf("Unable to connect to database: %v", err)
-			storable = storage.NewInternalStorage()
+			storable = server.NewInternalStorage()
 		} else {
 			defer pool.Close()
-			storable = storage.NewDatabaseStorage(pool)
+			storable = server.NewDatabaseStorage(pool)
 		}
 	} else {
 		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
-		storable = storage.NewInternalStorage()
+		storable = server.NewInternalStorage()
 	}
 
 	if *fileStoragePath == "" {

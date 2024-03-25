@@ -1,41 +1,82 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"fiber-apis/internal/models"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"os"
+	"sync"
 )
 
-type MyStorage struct {
-	data map[string]string
+type InternalStorage struct {
+	sync.RWMutex
+	urls map[string]string
 }
 
-func (s *MyStorage) GetURL(id string) (string, error) {
-	url, ok := s.data[id]
-	if !ok {
-		return "", fmt.Errorf("URL not found for ID: %s", id)
+func NewInternalStorage() *InternalStorage {
+	return &InternalStorage{
+		urls: make(map[string]string),
 	}
-	return url, nil
 }
 
-func (s *MyStorage) SetURL(id, url string) {
-	s.data[id] = url
+func (s *InternalStorage) GetURL(id string) (string, error) {
+	s.RLock()
+	defer s.RUnlock()
+	originalURL, ok := s.urls[id]
+	if !ok {
+		return "", errors.New("URL not found")
+	}
+	return originalURL, nil
 }
 
-func (s *MyStorage) Ping() error {
-	return nil
+func (s *InternalStorage) SetURL(id, url string) {
+	s.Lock()
+	defer s.Unlock()
+	s.urls[id] = url
 }
 
-func (s *MyStorage) GetAllKeys() ([]string, error) {
-	keys := make([]string, 0, len(s.data))
-	for k := range s.data {
+func (s *InternalStorage) GetAllKeys() ([]string, error) {
+	s.RLock()
+	defer s.RUnlock()
+	keys := make([]string, 0, len(s.urls))
+	for k := range s.urls {
 		keys = append(keys, k)
 	}
 	return keys, nil
+}
+
+func (s *InternalStorage) Ping() error {
+	return nil
+}
+
+type DatabaseStorage struct {
+	pool *pgxpool.Pool
+}
+
+func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
+	return &DatabaseStorage{
+		pool: pool,
+	}
+}
+
+func (s *DatabaseStorage) GetURL(id string) (string, error) {
+	return "", nil
+}
+
+func (s *DatabaseStorage) SetURL(id, url string) {
+
+}
+
+func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
+	return nil, nil
+}
+
+func (s *DatabaseStorage) Ping() error {
+	return s.pool.Ping(context.Background())
 }
 
 type Server struct {

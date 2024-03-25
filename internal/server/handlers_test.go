@@ -22,7 +22,7 @@ func TestShortenURLHandler(t *testing.T) {
 	}
 
 	server := &Server{
-		Storage:        &MyStorage{data: make(map[string]string)},
+		Storage:        &InternalStorage{urls: make(map[string]string)},
 		Cfg:            config,
 		App:            fiber.New(),
 		ShortURLPrefix: config.BaseURL + "/",
@@ -80,7 +80,7 @@ func TestRedirectToOriginalURL(t *testing.T) {
 	}
 
 	server := &Server{
-		Storage:        &MyStorage{data: make(map[string]string)},
+		Storage:        &InternalStorage{urls: make(map[string]string)},
 		Cfg:            config,
 		App:            fiber.New(),
 		ShortURLPrefix: config.BaseURL + "/",
@@ -117,8 +117,8 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			URL:          "",
 		},
 	}
-	server.Storage.(*MyStorage).data["invalid_id"] = "!$#09"
-	server.Storage.(*MyStorage).data["1"] = "http://yandex.ru"
+	server.Storage.(*InternalStorage).urls["invalid_id"] = "!$#09"
+	server.Storage.(*InternalStorage).urls["1"] = "http://yandex.ru"
 
 	for _, test := range tests {
 
@@ -144,7 +144,7 @@ func TestShortenAPIHandler(t *testing.T) {
 		BaseURL: "http://localhost:8080", //
 	}
 	server := &Server{
-		Storage:        &MyStorage{data: make(map[string]string)},
+		Storage:        &InternalStorage{urls: make(map[string]string)},
 		Cfg:            config,
 		App:            fiber.New(),
 		ShortURLPrefix: config.BaseURL + "/",
