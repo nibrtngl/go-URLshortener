@@ -26,16 +26,24 @@ func main() {
 	})
 	logger.SetLevel(logrus.InfoLevel)
 
-	dbDSN := flag.String("d", "", "Строка подключения к базе данных")
+	dbDSNFlag := flag.String("d", "", "Строка подключения к базе данных")
+	address := flag.String("a", "", "адрес для запуска HTTP-сервера")
+	baseURL := flag.String("b", "", "базовый URL для сокращенных URL")
+	fileStoragePath := flag.String("f", "", "путь к файлу для хранения данных")
 	flag.Parse()
+
+	dbDSN := os.Getenv("DATABASE_DSN")
+	if dbDSN == "" {
+		dbDSN = *dbDSNFlag
+	}
 
 	var storable models.Storable
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if *dbDSN != "" {
-		pool, err := pgxpool.Connect(ctx, *dbDSN)
+	if dbDSN != "" {
+		pool, err := pgxpool.Connect(ctx, dbDSN)
 		if err != nil {
 			logger.Errorf("Unable to connect to database: %v", err)
 			storable = storage.NewInternalStorage()
@@ -44,14 +52,10 @@ func main() {
 			storable = storage.NewDatabaseStorage(pool)
 		}
 	} else {
-		logger.Error("DATABASE_URL environment variable is not set, using internal storage")
+		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
 		storable = storage.NewInternalStorage()
 	}
 
-	address := flag.String("a", "", "адрес для запуска HTTP-сервера")
-	baseURL := flag.String("b", "", "базовый URL для сокращенных URL")
-	fileStoragePath := flag.String("f", "", "путь к файлу для хранения данных")
-	flag.Parse()
 	if *fileStoragePath == "" {
 		*fileStoragePath = os.Getenv("FILE_STORAGE_PATH")
 	}
