@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"os"
+	"time"
 )
 
 func main() {
@@ -28,8 +29,11 @@ func main() {
 	dbDSN := os.Getenv("DATABASE_DSN")
 	var storable models.Storable
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	if dbDSN != "" {
-		pool, err := pgxpool.Connect(context.Background(), dbDSN)
+		pool, err := pgxpool.Connect(ctx, dbDSN)
 		if err != nil {
 			logger.Errorf("Unable to connect to database: %v", err)
 			storable = storage.NewInternalStorage()
