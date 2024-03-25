@@ -1,37 +1,67 @@
 package main
 
 import (
+	"context"
+	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
 	"flag"
-	"fmt"
+	"github.com/caarlos0/env/v10"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/sirupsen/logrus"
 	"os"
+	"time"
 )
 
 func main() {
-	address := flag.String("a", "", "address to run the HTTP server")
-	baseURL := flag.String("b", "", "base URL for the shortened URL")
-	fileStoragePath := flag.String("f", "", "path to the file storage")
+	var cfg models.Config
+
+	if err := env.Parse(&cfg); err != nil {
+		logrus.Errorf("Ошибка при парсинге переменных окружения: %v", err)
+	}
+
+	logger := logrus.New()
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+	logger.SetLevel(logrus.InfoLevel)
+
+	dbDSNFlag := flag.String("d", "", "Строка подключения к базе данных")
+	address := flag.String("a", "", "адрес для запуска HTTP-сервера")
+	baseURL := flag.String("b", "", "базовый URL для сокращенных URL")
+	fileStoragePath := flag.String("f", "", "путь к файлу для хранения данных")
 	flag.Parse()
+
+	dbDSN := os.Getenv("DATABASE_DSN")
+	if dbDSN == "" {
+		dbDSN = *dbDSNFlag
+	}
+
+	var storable models.Storable
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if dbDSN != "" {
+		pool, err := pgxpool.Connect(ctx, dbDSN)
+		if err != nil {
+			logger.Errorf("Unable to connect to database: %v", err)
+			storable = server.NewInternalStorage()
+		} else {
+			defer pool.Close()
+			storable = server.NewDatabaseStorage(pool) // 123
+		}
+	} else {
+		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
+		storable = server.NewInternalStorage()
+	}
 
 	if *fileStoragePath == "" {
 		*fileStoragePath = os.Getenv("FILE_STORAGE_PATH")
 	}
-
 	if *fileStoragePath == "" {
 		*fileStoragePath = "/tmp/short-url-db.json"
 	}
 
-	fmt.Println("File storage path:", *fileStoragePath)
-
-	// Read environment variables
-	if envAddress := os.Getenv("SERVER_ADDRESS"); envAddress != "" {
-		*address = envAddress
-	}
-	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-		*baseURL = envBaseURL
-	}
-
-	// Set default values if not provided
 	if *address == "" {
 		*address = "localhost:8080"
 	}
@@ -39,16 +69,17 @@ func main() {
 		*baseURL = "http://localhost:8080"
 	}
 
-	config := server.Config{
-		Address: *address,
-		BaseURL: *baseURL,
+	config := models.Config{
+		Address:         *address,
+		BaseURL:         *baseURL,
+		FileStoragePath: *fileStoragePath,
 	}
 
-	server := server.NewServer(config)
+	server := server.NewServer(config, storable)
 
-	// Run the server
-	err := server.Run()
-	if err != nil {
-		fmt.Printf("Error running server: %v", err)
+	logger.Infof("Запуск сервера на адресе %s", cfg.Address)
+
+	if err := server.Run(); err != nil {
+		logger.Fatalf("Ошибка запуска сервера: %v", err)
 	}
 }
