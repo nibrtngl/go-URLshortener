@@ -84,7 +84,6 @@ type Server struct {
 
 func NewServer(cfg models.Config, storage models.Storable) *Server {
 
-	// Исправлены ссылки на Config
 	if cfg.FileStoragePath == "" {
 		fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
 		if fileStoragePath != "" {
@@ -125,8 +124,8 @@ func NewServer(cfg models.Config, storage models.Storable) *Server {
 func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
-	s.App.Get("/:id", s.redirectToOriginalURL)
 	s.App.Get("/ping", s.PingHandler)
+	s.App.Get("/:id", s.redirectToOriginalURL)
 }
 
 func (s *Server) Run() error {

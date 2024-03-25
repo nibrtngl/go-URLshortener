@@ -72,5 +72,5 @@ func (s *Server) PingHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Failed to ping database")
 	}
-	return c.Status(http.StatusOK).SendString("Database connection is alive")
+	return c.Status(http.StatusOK).SendString("Database connected")
 }
