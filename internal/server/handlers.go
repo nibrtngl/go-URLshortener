@@ -67,7 +67,7 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(resp)
 }
 
-func (s *Server) pingHandler(c *fiber.Ctx) error {
+func (s *Server) PingHandler(c *fiber.Ctx) error {
 	err := s.Storage.Ping()
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Failed to ping database")

@@ -92,7 +92,7 @@ func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
-	s.App.Get("/ping", s.pingHandler)
+	s.App.Get("/ping", s.PingHandler)
 }
 
 func (s *Server) Run() error {

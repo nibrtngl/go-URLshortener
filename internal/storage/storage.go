@@ -7,18 +7,18 @@ import (
 	"sync"
 )
 
-type InMemoryStorage struct {
+type InternalStorage struct {
 	sync.RWMutex
 	urls map[string]string
 }
 
-func NewInMemoryStorage() *InMemoryStorage {
-	return &InMemoryStorage{
+func NewInternalStorage() *InternalStorage {
+	return &InternalStorage{
 		urls: make(map[string]string),
 	}
 }
 
-func (s *InMemoryStorage) GetURL(id string) (string, error) {
+func (s *InternalStorage) GetURL(id string) (string, error) {
 	s.RLock()
 	defer s.RUnlock()
 	originalURL, ok := s.urls[id]
@@ -28,13 +28,13 @@ func (s *InMemoryStorage) GetURL(id string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *InMemoryStorage) SetURL(id, url string) {
+func (s *InternalStorage) SetURL(id, url string) {
 	s.Lock()
 	defer s.Unlock()
 	s.urls[id] = url
 }
 
-func (s *InMemoryStorage) GetAllKeys() ([]string, error) {
+func (s *InternalStorage) GetAllKeys() ([]string, error) {
 	s.RLock()
 	defer s.RUnlock()
 	keys := make([]string, 0, len(s.urls))
@@ -44,7 +44,7 @@ func (s *InMemoryStorage) GetAllKeys() ([]string, error) {
 	return keys, nil
 }
 
-func (s *InMemoryStorage) Ping() error {
+func (s *InternalStorage) Ping() error {
 	return nil // In-memory storage doesn't need to ping a database
 }
 
@@ -59,19 +59,15 @@ func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
 }
 
 func (s *DatabaseStorage) GetURL(id string) (string, error) {
-	// Implement the query to get the URL from the database.
-	// Return the URL or an error if the query fails.
-	return "", nil // Placeholder
+	return "", nil
 }
 
 func (s *DatabaseStorage) SetURL(id, url string) {
-	// Implement the query to store the URL in the database.
+
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
-	// Implement the query to get all keys from the database.
-	// Return the keys or an error if the query fails.
-	return nil, nil // Placeholder
+	return nil, nil
 }
 
 func (s *DatabaseStorage) Ping() error {

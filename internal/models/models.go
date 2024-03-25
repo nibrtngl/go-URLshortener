@@ -4,7 +4,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Storable is the interface that must be implemented by any storage backend.
 type Storable interface {
 	GetURL(id string) (string, error)
 	SetURL(id, url string)
