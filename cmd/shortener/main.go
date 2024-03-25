@@ -26,14 +26,16 @@ func main() {
 	})
 	logger.SetLevel(logrus.InfoLevel)
 
-	dbDSN := os.Getenv("DATABASE_DSN")
+	dbDSN := flag.String("d", "", "Строка подключения к базе данных")
+	flag.Parse()
+
 	var storable models.Storable
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if dbDSN != "" {
-		pool, err := pgxpool.Connect(ctx, dbDSN)
+	if *dbDSN != "" {
+		pool, err := pgxpool.Connect(ctx, *dbDSN)
 		if err != nil {
 			logger.Errorf("Unable to connect to database: %v", err)
 			storable = storage.NewInternalStorage()
