@@ -48,7 +48,13 @@ func main() {
 			logger.Errorf("Unable to connect to database: %v", err)
 			storable = server.NewInternalStorage()
 			err = db.CreateURLsTable(ctx, pool)
+			if err != nil {
+				logger.Fatalf("Failed to create URLs table: %v", err)
+			}
 			err = db.InitURLsTable(ctx, pool)
+			if err != nil {
+				logger.Fatalf("Failed to initialize URLs table: %v", err)
+			}
 		} else {
 			defer pool.Close()
 			storable = server.NewDatabaseStorage(pool) //
