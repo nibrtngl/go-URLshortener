@@ -21,19 +21,19 @@ func NewPostgresStorage(pool *pgxpool.Pool) *PostgresStorage {
 	}
 }
 
-func (s *PostgresStorage) GetURL(short_url string) (string, error) {
-	var original_url string
+func (s *PostgresStorage) GetURL(shortURL string) (string, error) {
+	var originalURL string
 	query := "SELECT original_url FROM urls WHERE short_url=$1"
-	err := s.pool.QueryRow(context.Background(), query, short_url).Scan(&original_url)
+	err := s.pool.QueryRow(context.Background(), query, shortURL).Scan(&originalURL)
 	if err != nil {
 		return "", err
 	}
-	return original_url, nil
+	return originalURL, nil
 }
 
-func (s *PostgresStorage) SetURL(short_url, original_url string) {
+func (s *PostgresStorage) SetURL(shortURL, originalURL string) {
 	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	_, err := s.pool.Exec(context.Background(), query, short_url, original_url)
+	_, err := s.pool.Exec(context.Background(), query, shortURL, originalURL)
 	if err != nil {
 		logrus.Errorf("Failed to insert URL into database: %v", err)
 	}
@@ -47,19 +47,15 @@ func (s *PostgresStorage) GetAllKeys() ([]string, error) {
 	}
 	defer rows.Close()
 
-	var short_urls []string
+	var shortUrls []string
 	for rows.Next() {
-		var short_url string
-		if err := rows.Scan(&short_url); err != nil {
+		var shortURL string
+		if err := rows.Scan(&shortURL); err != nil {
 			return nil, err
 		}
-		short_urls = append(short_urls, short_url)
+		shortUrls = append(shortUrls, shortURL)
 	}
-	return short_urls, nil
-}
-
-func (s *PostgresStorage) Ping() error {
-	return s.pool.Ping(context.Background())
+	return shortUrls, nil
 }
 
 func (s *PostgresStorage) CreateTable() error {
