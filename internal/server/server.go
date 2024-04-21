@@ -11,6 +11,62 @@ import (
 	"os"
 )
 
+type PostgresStorage struct {
+	pool *pgxpool.Pool
+}
+
+func NewPostgresStorage(pool *pgxpool.Pool) *PostgresStorage {
+	return &PostgresStorage{
+		pool: pool,
+	}
+}
+
+func (s *PostgresStorage) GetURL(short_url string) (string, error) {
+	var original_url string
+	query := "SELECT original_url FROM urls WHERE short_url=$1"
+	err := s.pool.QueryRow(context.Background(), query, short_url).Scan(&original_url)
+	if err != nil {
+		return "", err
+	}
+	return original_url, nil
+}
+
+func (s *PostgresStorage) SetURL(short_url, original_url string) {
+	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
+	_, err := s.pool.Exec(context.Background(), query, short_url, original_url)
+	if err != nil {
+		logrus.Errorf("Failed to insert URL into database: %v", err)
+	}
+}
+
+func (s *PostgresStorage) GetAllKeys() ([]string, error) {
+	query := "SELECT short_url FROM urls"
+	rows, err := s.pool.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var short_urls []string
+	for rows.Next() {
+		var short_url string
+		if err := rows.Scan(&short_url); err != nil {
+			return nil, err
+		}
+		short_urls = append(short_urls, short_url)
+	}
+	return short_urls, nil
+}
+
+func (s *PostgresStorage) Ping() error {
+	return s.pool.Ping(context.Background())
+}
+
+func (s *PostgresStorage) CreateTable() error {
+	_, err := s.pool.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS urls (id VARCHAR(255) PRIMARY KEY, url TEXT NOT NULL)")
+	return err
+}
+
 type InternalStorage struct {
 	urls map[string]string
 }

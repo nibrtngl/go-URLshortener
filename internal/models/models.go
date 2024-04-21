@@ -11,6 +11,11 @@ type Storable interface {
 	Ping() error
 }
 
+type DatabaseStorable interface {
+	Storable
+	CreateTable() error
+}
+
 type ErrorResponse struct {
 	Error string `json:"error"`
 }

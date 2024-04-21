@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fiber-apis/internal/db"
 	"fiber-apis/internal/models"
 	"fiber-apis/internal/server"
 	"flag"
@@ -46,9 +47,11 @@ func main() {
 		if err != nil {
 			logger.Errorf("Unable to connect to database: %v", err)
 			storable = server.NewInternalStorage()
+			err = db.CreateURLsTable(ctx, pool)
+			err = db.InitURLsTable(ctx, pool)
 		} else {
 			defer pool.Close()
-			storable = server.NewDatabaseStorage(pool) // 123
+			storable = server.NewDatabaseStorage(pool) //
 		}
 	} else {
 		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
