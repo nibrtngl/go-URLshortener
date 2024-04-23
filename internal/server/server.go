@@ -11,58 +11,6 @@ import (
 	"os"
 )
 
-type PostgresStorage struct {
-	pool *pgxpool.Pool
-}
-
-func NewPostgresStorage(pool *pgxpool.Pool) *PostgresStorage {
-	return &PostgresStorage{
-		pool: pool,
-	}
-}
-
-func (s *PostgresStorage) GetURL(shortURL string) (string, error) {
-	var originalURL string
-	query := "SELECT original_url FROM urls WHERE short_url=$1"
-	err := s.pool.QueryRow(context.Background(), query, shortURL).Scan(&originalURL)
-	if err != nil {
-		return "", err
-	}
-	return originalURL, nil
-}
-
-func (s *PostgresStorage) SetURL(shortURL, originalURL string) {
-	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	_, err := s.pool.Exec(context.Background(), query, shortURL, originalURL)
-	if err != nil {
-		logrus.Errorf("Failed to insert URL into database: %v", err)
-	}
-}
-
-func (s *PostgresStorage) GetAllKeys() ([]string, error) {
-	query := "SELECT short_url FROM urls"
-	rows, err := s.pool.Query(context.Background(), query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var shortUrls []string
-	for rows.Next() {
-		var shortURL string
-		if err := rows.Scan(&shortURL); err != nil {
-			return nil, err
-		}
-		shortUrls = append(shortUrls, shortURL)
-	}
-	return shortUrls, nil
-}
-
-func (s *PostgresStorage) CreateTable() error {
-	_, err := s.pool.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS urls (id VARCHAR(255) PRIMARY KEY, url TEXT NOT NULL)")
-	return err
-}
-
 type InternalStorage struct {
 	urls map[string]string
 }
@@ -134,8 +82,14 @@ type Server struct {
 	DBPool         *pgxpool.Pool // пул соединений с базой данных
 }
 
-func NewServer(cfg models.Config, storage models.Storable) *Server {
+func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
+	var storage models.Storable
 
+	if cfg.DatabaseDSN != "" {
+		storage = NewDatabaseStorage(pool)
+	} else {
+		storage = NewInternalStorage()
+	}
 	if cfg.FileStoragePath == "" {
 		fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
 		if fileStoragePath != "" {

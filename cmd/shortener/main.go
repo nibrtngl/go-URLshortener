@@ -37,33 +37,6 @@ func main() {
 		dbDSN = *dbDSNFlag
 	}
 
-	var storable models.Storable
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if dbDSN != "" {
-		pool, err := pgxpool.Connect(ctx, dbDSN)
-		if err != nil {
-			logger.Errorf("Unable to connect to database: %v", err)
-			storable = server.NewInternalStorage()
-			err = db.CreateURLsTable(ctx, pool)
-			if err != nil {
-				logger.Fatalf("Failed to create URLs table: %v", err)
-			}
-			err = db.InitURLsTable(ctx, pool)
-			if err != nil {
-				logger.Fatalf("Failed to initialize URLs table: %v", err)
-			}
-		} else {
-			defer pool.Close()
-			storable = server.NewDatabaseStorage(pool) //
-		}
-	} else {
-		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
-		storable = server.NewInternalStorage()
-	}
-
 	if *fileStoragePath == "" {
 		*fileStoragePath = os.Getenv("FILE_STORAGE_PATH")
 	}
@@ -78,17 +51,38 @@ func main() {
 		*baseURL = "http://localhost:8080"
 	}
 
-	config := models.Config{
-		Address:         *address,
-		BaseURL:         *baseURL,
-		FileStoragePath: *fileStoragePath,
-	}
+	cfg.Address = *address
+	cfg.BaseURL = *baseURL
+	cfg.FileStoragePath = *fileStoragePath
 
-	server := server.NewServer(config, storable)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	logger.Infof("Запуск сервера на адресе %s", cfg.Address)
+	if dbDSN != "" {
+		pool, err := pgxpool.Connect(ctx, dbDSN)
+		if err != nil {
+			logger.Fatalf("Unable to connect to database: %v", err)
+		}
+		defer pool.Close()
 
-	if err := server.Run(); err != nil {
-		logger.Fatalf("Ошибка запуска сервера: %v", err)
+		err = db.InitDB(pool)
+		if err != nil {
+			logger.Fatalf("Failed to initialize database: %v", err)
+		}
+
+		server := server.NewServer(cfg, pool)
+		logger.Infof("Запуск сервера на адресе %s", cfg.Address)
+
+		if err := server.Run(); err != nil {
+			logger.Fatalf("Ошибка запуска сервера: %v", err)
+		}
+	} else {
+		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
+		server := server.NewServer(cfg, nil)
+		logger.Infof("Запуск сервера на адресе %s", cfg.Address)
+
+		if err := server.Run(); err != nil {
+			logger.Fatalf("Ошибка запуска сервера: %v", err)
+		}
 	}
 }
