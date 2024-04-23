@@ -74,9 +74,9 @@ func (s *DatabaseStorage) GetURL(id string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *DatabaseStorage) SetURL(id, url string) error {
+func (s *DatabaseStorage) SetURL(id, originalURL string) error {
 	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	result, err := s.pool.Exec(context.Background(), query, id, url)
+	result, err := s.pool.Exec(context.Background(), query, id, originalURL)
 	if err != nil {
 		return fmt.Errorf("failed to insert URL into database: %v", err)
 	}
