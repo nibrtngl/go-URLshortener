@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fiber-apis/internal/models"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -22,7 +23,6 @@ func NewInternalStorage() *InternalStorage {
 }
 
 func (s *InternalStorage) GetURL(id string) (string, error) {
-
 	originalURL, ok := s.urls[id]
 	if !ok {
 		return "", errors.New("URL not found")
@@ -30,8 +30,9 @@ func (s *InternalStorage) GetURL(id string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *InternalStorage) SetURL(id, url string) {
+func (s *InternalStorage) SetURL(id, url string) error {
 	s.urls[id] = url
+	return nil
 }
 
 func (s *InternalStorage) GetAllKeys() ([]string, error) {
@@ -60,8 +61,13 @@ func (s *DatabaseStorage) GetURL(id string) (string, error) {
 	return "", nil
 }
 
-func (s *DatabaseStorage) SetURL(id, url string) {
-
+func (s *DatabaseStorage) SetURL(id, url string) error {
+	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
+	_, err := s.pool.Exec(context.Background(), query, id, url)
+	if err != nil {
+		return fmt.Errorf("Failed to insert URL into database: %v", err)
+	}
+	return nil
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
