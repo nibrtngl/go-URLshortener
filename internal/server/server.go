@@ -25,7 +25,7 @@ func NewInternalStorage() *InternalStorage {
 func (s *InternalStorage) GetURL(id string) (string, error) {
 	originalURL, ok := s.urls[id]
 	if !ok {
-		return "", errors.New("URL not found")
+		return "", errors.New("url not found")
 	}
 	return originalURL, nil
 }
@@ -65,7 +65,7 @@ func (s *DatabaseStorage) SetURL(id, url string) error {
 	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
 	_, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
-		return fmt.Errorf("Failed to insert URL into database: %v", err)
+		return fmt.Errorf("failed to insert URL into database %v", err)
 	}
 	return nil
 }
