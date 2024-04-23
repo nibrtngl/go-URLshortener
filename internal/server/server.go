@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -58,14 +59,29 @@ func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
 }
 
 func (s *DatabaseStorage) GetURL(id string) (string, error) {
-	return "", nil
+	query := "SELECT original_url FROM urls WHERE short_url = $1"
+	row := s.pool.QueryRow(context.Background(), query, id)
+
+	var originalURL string
+	err := row.Scan(&originalURL)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", fmt.Errorf("no original URL found for id %s", id)
+		}
+		return "", fmt.Errorf("failed to get URL from database: %v", err)
+	}
+
+	return originalURL, nil
 }
 
 func (s *DatabaseStorage) SetURL(id, url string) error {
 	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	_, err := s.pool.Exec(context.Background(), query, id, url)
+	result, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
-		return fmt.Errorf("failed to insert URL into database %v", err)
+		return fmt.Errorf("failed to insert URL into database: %v", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("no rows were inserted")
 	}
 	return nil
 }
