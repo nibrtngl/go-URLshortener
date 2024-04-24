@@ -23,16 +23,16 @@ func NewInternalStorage() *InternalStorage {
 	}
 }
 
-func (s *InternalStorage) GetURL(id string) (string, error) {
-	originalURL, ok := s.urls[id]
+func (s *InternalStorage) GetURL(shortURL string) (string, error) {
+	originalURL, ok := s.urls[shortURL]
 	if !ok {
 		return "", errors.New("url not found")
 	}
 	return originalURL, nil
 }
 
-func (s *InternalStorage) SetURL(id, url string) error {
-	s.urls[id] = url
+func (s *InternalStorage) SetURL(shortURL, url string) error {
+	s.urls[shortURL] = url
 	return nil
 }
 
@@ -58,15 +58,15 @@ func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
 	}
 }
 
-func (s *DatabaseStorage) GetURL(id string) (string, error) {
+func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	query := "SELECT original_url FROM urls WHERE short_url = $1"
-	row := s.pool.QueryRow(context.Background(), query, id)
+	row := s.pool.QueryRow(context.Background(), query, shortURL)
 
 	var originalURL string
 	err := row.Scan(&originalURL)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", fmt.Errorf("no original URL found for id %s", id)
+			return "", fmt.Errorf("no original URL found for shortURL %s", shortURL)
 		}
 		return "", fmt.Errorf("failed to get URL from database: %v", err)
 	}
@@ -74,9 +74,9 @@ func (s *DatabaseStorage) GetURL(id string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *DatabaseStorage) SetURL(id, originalURL string) error {
+func (s *DatabaseStorage) SetURL(shortURL, originalURL string) error {
 	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	result, err := s.pool.Exec(context.Background(), query, id, originalURL)
+	result, err := s.pool.Exec(context.Background(), query, shortURL, originalURL)
 	if err != nil {
 		return fmt.Errorf("failed to insert URL into database: %v", err)
 	}

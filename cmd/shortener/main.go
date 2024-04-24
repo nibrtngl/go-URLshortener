@@ -64,7 +64,6 @@ func main() {
 			logger.Fatalf("Unable to connect to database: %v", err)
 		}
 		defer pool.Close()
-
 		err = db.InitDB(pool)
 		if err != nil {
 			logger.Fatalf("Failed to initialize database: %v", err)

@@ -13,5 +13,8 @@ func InitDB(pool *pgxpool.Pool) error {
             original_url VARCHAR(255) NOT NULL
         )
     `)
+	if err != nil {
+		return err
+	}
 	return err
 }

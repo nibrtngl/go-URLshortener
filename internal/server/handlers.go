@@ -16,7 +16,6 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, string(originalURL))
 
 	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
