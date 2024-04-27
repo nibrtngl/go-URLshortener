@@ -28,7 +28,7 @@ func main() {
 
 	dbDSNFlag := flag.String("d", "", "Строка подключения к базе данных")
 	address := flag.String("a", "", "адрес для запуска HTTP-сервера")
-	baseURL := flag.String("b", "", "базовый URL для сокращенных URL")
+	baseURL := flag.String("b", "", "базовы URL для сокращенных URL")
 	fileStoragePath := flag.String("f", "", "путь к файлу для хранения данных")
 	flag.Parse()
 
