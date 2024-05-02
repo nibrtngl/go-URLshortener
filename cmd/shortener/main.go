@@ -54,6 +54,7 @@ func main() {
 	cfg.Address = *address
 	cfg.BaseURL = *baseURL
 	cfg.FileStoragePath = *fileStoragePath
+	cfg.DatabaseDSN = dbDSN
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
