@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fiber-apis/internal/models"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -31,8 +34,8 @@ func (s *InternalStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *InternalStorage) SetURL(shortURL, url string) error {
-	s.urls[shortURL] = url
+func (s *InternalStorage) SetURL(id, url string) error {
+	s.urls[id] = url
 	return nil
 }
 
@@ -74,9 +77,9 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *DatabaseStorage) SetURL(shortURL, originalURL string) error {
+func (s *DatabaseStorage) SetURL(id, url string) error {
 	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	result, err := s.pool.Exec(context.Background(), query, shortURL, originalURL)
+	result, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
 		return fmt.Errorf("failed to insert URL into database: %v", err)
 	}
@@ -102,6 +105,34 @@ type Server struct {
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
 	DBPool         *pgxpool.Pool // пул соединений с базой данных
+}
+
+func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
+	var req []models.BatchShortenRequest
+	if err := json.Unmarshal(c.Body(), &req); err != nil {
+		errResponse := models.ErrorResponse{
+			Error: "bad request: Invalid json format",
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
+	}
+
+	var resp []models.BatchShortenResponse
+	for _, item := range req {
+		if !isValidURL(item.OriginalURL) {
+			return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
+		}
+
+		id := generateShortID()
+		s.Storage.SetURL(id, item.OriginalURL)
+
+		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+		resp = append(resp, models.BatchShortenResponse{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      shortURL,
+		})
+	}
+
+	return c.Status(http.StatusCreated).JSON(resp)
 }
 
 func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
@@ -154,6 +185,7 @@ func (s *Server) setupRoutes() {
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/ping", s.PingHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
+	s.App.Post("/api/shorten/batch", s.shortenBatchURLHandler)
 }
 
 func (s *Server) Run() error {
