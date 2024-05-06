@@ -47,6 +47,7 @@ func (s *InternalStorage) GetAllKeys() ([]string, error) {
 	return keys, nil
 }
 
+// 1
 func (s *InternalStorage) Ping() error {
 	return nil
 }
