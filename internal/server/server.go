@@ -1,14 +1,12 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
+	"fiber-apis/internal/db"
 	"fiber-apis/internal/models"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -50,52 +48,6 @@ func (s *InternalStorage) GetAllKeys() ([]string, error) {
 // 1
 func (s *InternalStorage) Ping() error {
 	return nil
-}
-
-type DatabaseStorage struct {
-	pool *pgxpool.Pool
-}
-
-func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
-	return &DatabaseStorage{
-		pool: pool,
-	}
-}
-
-func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
-	query := "SELECT original_url FROM urls WHERE short_url = $1"
-	row := s.pool.QueryRow(context.Background(), query, shortURL)
-
-	var originalURL string
-	err := row.Scan(&originalURL)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return "", fmt.Errorf("no original URL found for shortURL %s", shortURL)
-		}
-		return "", fmt.Errorf("failed to get URL from database: %v", err)
-	}
-
-	return originalURL, nil
-}
-
-func (s *DatabaseStorage) SetURL(id, url string) error {
-	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	result, err := s.pool.Exec(context.Background(), query, id, url)
-	if err != nil {
-		return fmt.Errorf("failed to insert URL into database: %v", err)
-	}
-	if result.RowsAffected() == 0 {
-		return fmt.Errorf("no rows were inserted")
-	}
-	return nil
-}
-
-func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
-	return nil, nil
-}
-
-func (s *DatabaseStorage) Ping() error {
-	return s.pool.Ping(context.Background())
 }
 
 type Server struct {
@@ -140,7 +92,7 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 	var storage models.Storable
 
 	if cfg.DatabaseDSN != "" {
-		storage = NewDatabaseStorage(pool)
+		storage = db.NewDatabaseStorage(pool)
 	} else {
 		storage = NewInternalStorage()
 	}
