@@ -47,9 +47,10 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 
 		id, err := s.Storage.GetURL(item.OriginalURL)
 		if err == nil {
+			shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 			resp = append(resp, models.BatchShortenResponse{
 				CorrelationID: item.CorrelationID,
-				ShortURL:      id,
+				ShortURL:      shortURL,
 			})
 			continue
 		}
@@ -57,9 +58,10 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 		id = generateShortID()
 		err = s.Storage.SetURL(id, item.OriginalURL)
 		if err == db.ErrURLAlreadyExists {
+			shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 			return c.Status(http.StatusConflict).JSON(models.BatchShortenResponse{
 				CorrelationID: item.CorrelationID,
-				ShortURL:      id,
+				ShortURL:      shortURL,
 			})
 		} else if err != nil {
 			return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
