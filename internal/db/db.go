@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -58,7 +57,7 @@ func (s *DatabaseStorage) SetURL(id, url string) error {
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
-			if pgErr.Code == pgerrcode.UniqueViolation {
+			if pgErr.Code == "23505" {
 				return ErrURLAlreadyExists
 			}
 		}
