@@ -2,8 +2,8 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"fiber-apis/internal/db"
+	"fiber-apis/internal/local_storage"
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -14,50 +14,20 @@ import (
 	"os"
 )
 
-type InternalStorage struct {
-	urls map[string]string
-}
-
-func NewInternalStorage() *InternalStorage {
-	return &InternalStorage{
-		urls: make(map[string]string),
-	}
-}
-
-func (s *InternalStorage) GetURL(shortURL string) (string, error) {
-	originalURL, ok := s.urls[shortURL]
-	if !ok {
-		return "", errors.New("url not found")
-	}
-	return originalURL, nil
-}
-
-func (s *InternalStorage) SetURL(id, url string) error {
-	s.urls[id] = url
-	return nil
-}
-
-func (s *InternalStorage) GetAllKeys() ([]string, error) {
-	keys := make([]string, 0, len(s.urls))
-	for k := range s.urls {
-		keys = append(keys, k)
-	}
-	return keys, nil
-}
-
-// 1
-func (s *InternalStorage) Ping() error {
-	return nil
+type Storable interface {
+	GetURL(id string) (string, error)
+	SetURL(id, url string) error
+	GetAllKeys() ([]string, error)
+	Ping() error
 }
 
 type Server struct {
-	Storage        models.Storable
+	Storage        Storable
 	Cfg            models.Config
 	App            *fiber.App
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
-	DBPool         *pgxpool.Pool // пул соединений с базой данных
 }
 
 func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
@@ -89,12 +59,12 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 }
 
 func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
-	var storage models.Storable
+	var storage Storable
 
 	if cfg.DatabaseDSN != "" {
 		storage = db.NewDatabaseStorage(pool)
 	} else {
-		storage = NewInternalStorage()
+		storage = local_storage.NewInternalStorage()
 	}
 	if cfg.FileStoragePath == "" {
 		fileStoragePath := os.Getenv("FILE_STORAGE_PATH")

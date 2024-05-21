@@ -4,13 +4,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Storable interface {
-	GetURL(id string) (string, error)
-	SetURL(id, url string) error
-	GetAllKeys() ([]string, error)
-	Ping() error
-}
-
 type BatchShortenRequest struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
