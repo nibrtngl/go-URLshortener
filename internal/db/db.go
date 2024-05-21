@@ -4,16 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
+
+var ErrURLAlreadyExists = errors.New("URL already exists")
 
 func InitDB(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(), `
         CREATE TABLE IF NOT EXISTS urls (
             id SERIAL PRIMARY KEY,
             short_url VARCHAR(255) NOT NULL,
-            original_url VARCHAR(255) NOT NULL
+            original_url VARCHAR(255) NOT NULL UNIQUE
         )
     `)
 	if err != nil {
@@ -49,13 +53,16 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 }
 
 func (s *DatabaseStorage) SetURL(id, url string) error {
-	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	result, err := s.pool.Exec(context.Background(), query, id, url)
+	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (original_url) DO NOTHING"
+	_, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				return ErrURLAlreadyExists
+			}
+		}
 		return fmt.Errorf("failed to insert URL into database: %v", err)
-	}
-	if result.RowsAffected() == 0 {
-		return fmt.Errorf("no rows were inserted")
 	}
 	return nil
 }
