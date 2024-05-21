@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/url"
 	"os"
@@ -18,7 +19,6 @@ func generateShortID() string {
 	idLength := 8
 	b := make([]byte, idLength)
 
-	// Generate a unique identifier
 	for i := range b {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
@@ -34,11 +34,22 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	defer file.Close()
 
 	writer := bufio.NewWriter(file)
-	for key, value := range s.Storage {
+
+	keys, err := s.Storage.GetAllKeys()
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		url, err := s.Storage.GetURL(key)
+		if err != nil {
+			return err
+		}
+
 		entry := map[string]string{
 			"uuid":         key,
-			"short_url":    value,
-			"original_url": value,
+			"short_url":    url,
+			"original_url": url,
 		}
 
 		entryJSON, err := json.Marshal(entry)
@@ -75,12 +86,11 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 			return err
 		}
 
-		uuid := entry["uuid"]
 		shortURL := entry["short_url"]
 		originalURL := entry["original_url"]
 
-		s.Storage[shortURL] = originalURL
-		s.Storage[uuid] = shortURL
+		s.Storage.SetURL(shortURL, originalURL)
+
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -88,4 +98,13 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	}
 
 	return nil
+}
+
+type fiberLogger struct {
+	logger *logrus.Logger
+}
+
+func (f *fiberLogger) Write(p []byte) (n int, err error) {
+	f.logger.Info(string(p))
+	return len(p), nil
 }

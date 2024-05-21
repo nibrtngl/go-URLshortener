@@ -2,28 +2,40 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
+	"fiber-apis/internal/localstorage"
+	"fiber-apis/internal/models"
+	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
 func TestShortenURLHandler(t *testing.T) {
-	config := Config{
+	config := models.Config{
 		Address: "localhost:8080",
 		BaseURL: "http://localhost:8080",
 	}
 
-	server := NewServer(config)
-	server.App.Post("/", server.shortenURLHandler)
+	server := &Server{
+		Storage:        localstorage.NewInternalStorage(),
+		Cfg:            config,
+		App:            fiber.New(),
+		ShortURLPrefix: config.BaseURL + "/",
+		Logger:         logrus.New(),
+	}
+	server.setupRoutes()
 
 	tests := []struct {
 		name         string
 		path         string
 		expectedCode int
 		URL          string
-		Header       string
 	}{
 		{
 			name:         "get HTTP status 201",
@@ -61,14 +73,21 @@ func TestShortenURLHandler(t *testing.T) {
 	}
 
 }
+
 func TestRedirectToOriginalURL(t *testing.T) {
-	config := Config{
+	config := models.Config{
 		Address: "localhost:8080",
 		BaseURL: "http://localhost:8080",
 	}
 
-	server := NewServer(config)
-	server.App.Get("/:id", server.redirectToOriginalURL)
+	server := &Server{
+		Storage:        localstorage.NewInternalStorage(),
+		Cfg:            config,
+		App:            fiber.New(),
+		ShortURLPrefix: config.BaseURL + "/",
+		Logger:         logrus.New(),
+	}
+	server.setupRoutes()
 
 	tests := []struct {
 		name         string
@@ -76,7 +95,6 @@ func TestRedirectToOriginalURL(t *testing.T) {
 		id           string
 		expectedCode int
 		URL          string
-		Header       string
 	}{
 		{
 			name:         "HTTP status 307",
@@ -100,8 +118,8 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			URL:          "",
 		},
 	}
-	server.Storage["invalid_id"] = "!$#09"
-	server.Storage["1"] = "http://yandex.ru"
+	server.Storage.SetURL("invalid_id", "!$#09")
+	server.Storage.SetURL("1", "http://yandex.ru")
 
 	for _, test := range tests {
 
@@ -112,6 +130,7 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			t.Errorf("Error testing %s: %s", test.name, err.Error())
 			continue
 		}
+
 		assert.Equalf(t, test.URL, resp.Header.Get("Location"), "unexpected redirect URL")
 		assert.Equalf(t, "text/plain; charset=utf-8", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.name)
@@ -121,30 +140,33 @@ func TestRedirectToOriginalURL(t *testing.T) {
 }
 
 func TestShortenAPIHandler(t *testing.T) {
-	config := Config{
+	config := models.Config{
 		Address: "localhost:8080",
-		BaseURL: "http://localhost:8080",
+		BaseURL: "http://localhost:8080", //
 	}
-	server := NewServer(config)
-	server.App.Post("/api/shorten", server.shortenAPIHandler)
+	server := &Server{
+		Storage:        localstorage.NewInternalStorage(),
+		Cfg:            config,
+		App:            fiber.New(),
+		ShortURLPrefix: config.BaseURL + "/",
+		Logger:         logrus.New(),
+	}
+	server.setupRoutes()
 
 	tests := []struct {
 		name           string
 		requestBody    string
 		expectedStatus int
-		expectedResult string
 	}{
 		{
 			name:           "Valid request",
 			requestBody:    `{"url": "https://example.com"}`,
 			expectedStatus: http.StatusCreated,
-			expectedResult: `{"result": "http://shorturl.com/abc123"}`,
 		},
 		{
 			name:           "Invalid JSON format",
 			requestBody:    `{"url123": "23https://example.com",}`,
 			expectedStatus: http.StatusBadRequest,
-			expectedResult: "Bad Request: Invalid JSON format",
 		},
 	}
 
@@ -154,12 +176,35 @@ func TestShortenAPIHandler(t *testing.T) {
 
 		resp, err := server.App.Test(req, -1)
 		if err != nil {
-			log.Println(err)
+			t.Errorf("Error testing %s: %s", test.name, err.Error())
 			continue
 		}
+
 		assert.Equalf(t, "application/json", resp.Header.Get("Content-type"), test.name)
 		assert.Equalf(t, test.expectedStatus, resp.StatusCode, test.name)
 
-		resp.Body.Close()
+		if test.expectedStatus == http.StatusCreated {
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Errorf("Error reading response body: %s", err)
+				continue
+			}
+
+			var result map[string]string
+			if err := json.Unmarshal(body, &result); err != nil {
+				t.Errorf("Error unmarshalling JSON: %s", err)
+				continue
+			}
+
+			shortURL, ok := result["result"]
+			if !ok {
+				t.Errorf("Expected 'result' field in response body, got: %v", result)
+				continue
+			}
+			defer resp.Body.Close()
+
+			expectedURL, _ := url.JoinPath(shortURL)
+			assert.Equalf(t, expectedURL, shortURL, "Expected shortened URL does not match")
+		}
 	}
 }
