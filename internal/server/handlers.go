@@ -2,11 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"fiber-apis/internal/db"
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"net/url"
 )
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
@@ -16,14 +16,15 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, string(originalURL))
+	shortURL, err := s.Storage.SetURL(id, string(originalURL))
 
-	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
-		logrus.Errorf("Failed to save storage to file: %v", err)
+		if err == db.ErrURLAlreadyExists {
+			return c.Status(http.StatusConflict).SendString(shortURL)
+		}
+		logrus.Errorf("Failed to save URL to storage: %v", err)
+		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
 	}
-
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
@@ -56,9 +57,18 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, req.URL)
+	shortURL, err := s.Storage.SetURL(id, req.URL)
 
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+	if err != nil {
+		if err == db.ErrURLAlreadyExists {
+			resp := models.ShortenResponse{
+				Result: shortURL,
+			}
+			return c.Status(http.StatusConflict).JSON(resp)
+		}
+		logrus.Errorf("Failed to save URL to storage: %v", err)
+		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
+	}
 
 	resp := models.ShortenResponse{
 		Result: shortURL,

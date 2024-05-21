@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -21,6 +23,8 @@ func InitDB(pool *pgxpool.Pool) error {
 	}
 	return err
 }
+
+var ErrURLAlreadyExists = fmt.Errorf("URL already exists")
 
 type DatabaseStorage struct {
 	pool *pgxpool.Pool
@@ -48,16 +52,20 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *DatabaseStorage) SetURL(id, url string) error {
-	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	result, err := s.pool.Exec(context.Background(), query, id, url)
-	if err != nil {
-		return fmt.Errorf("failed to insert URL into database: %v", err)
+func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
+	query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (original_url) DO UPDATE SET short_url = excluded.short_url RETURNING short_url`
+	row := s.pool.QueryRow(context.Background(), query, id, url)
+	var shortURL string
+	if err := row.Scan(&shortURL); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				return shortURL, ErrURLAlreadyExists
+			}
+		}
+		return "", fmt.Errorf("failed to insert or update URL in database: %v", err)
 	}
-	if result.RowsAffected() == 0 {
-		return fmt.Errorf("no rows were inserted")
-	}
-	return nil
+	return shortURL, nil
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
