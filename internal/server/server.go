@@ -3,7 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fiber-apis/internal/db"
-	"fiber-apis/internal/localStorage"
+	"fiber-apis/internal/localstorage"
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -64,7 +64,7 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 	if cfg.DatabaseDSN != "" {
 		storage = db.NewDatabaseStorage(pool)
 	} else {
-		storage = localStorage.NewInternalStorage()
+		storage = localstorage.NewInternalStorage()
 	}
 	if cfg.FileStoragePath == "" {
 		fileStoragePath := os.Getenv("FILE_STORAGE_PATH")

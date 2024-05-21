@@ -3,7 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"fiber-apis/internal/localStorage"
+	"fiber-apis/internal/localstorage"
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -23,7 +23,7 @@ func TestShortenURLHandler(t *testing.T) {
 	}
 
 	server := &Server{
-		Storage:        localStorage.NewInternalStorage(),
+		Storage:        localstorage.NewInternalStorage(),
 		Cfg:            config,
 		App:            fiber.New(),
 		ShortURLPrefix: config.BaseURL + "/",
@@ -81,7 +81,7 @@ func TestRedirectToOriginalURL(t *testing.T) {
 	}
 
 	server := &Server{
-		Storage:        localStorage.NewInternalStorage(),
+		Storage:        localstorage.NewInternalStorage(),
 		Cfg:            config,
 		App:            fiber.New(),
 		ShortURLPrefix: config.BaseURL + "/",
@@ -145,7 +145,7 @@ func TestShortenAPIHandler(t *testing.T) {
 		BaseURL: "http://localhost:8080", //
 	}
 	server := &Server{
-		Storage:        localStorage.NewInternalStorage(),
+		Storage:        localstorage.NewInternalStorage(),
 		Cfg:            config,
 		App:            fiber.New(),
 		ShortURLPrefix: config.BaseURL + "/",
