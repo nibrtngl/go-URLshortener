@@ -67,7 +67,7 @@ func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
 		return "", fmt.Errorf("failed to insert or update URL in database: %v", err)
 	}
 	return shortURL, nil
-}
+} //1
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
 	return nil, nil
