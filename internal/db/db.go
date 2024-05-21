@@ -24,6 +24,7 @@ func InitDB(pool *pgxpool.Pool) error {
 	return err
 }
 
+// 123
 var ErrURLAlreadyExists = fmt.Errorf("URL already exists")
 
 type DatabaseStorage struct {
