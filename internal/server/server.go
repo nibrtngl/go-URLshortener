@@ -66,7 +66,7 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 
 func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 	var storage Storable
-
+	//1
 	if cfg.DatabaseDSN != "" {
 		storage = db.NewDatabaseStorage(pool)
 	} else {
