@@ -14,6 +14,7 @@ import (
 	"os"
 )
 
+// 1
 type Storable interface {
 	GetURL(id string) (string, error)
 	SetURL(id, url string) (string, error)
