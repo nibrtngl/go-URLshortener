@@ -17,11 +17,9 @@ func InitDB(pool *pgxpool.Pool) error {
             id SERIAL PRIMARY KEY,
             short_url VARCHAR(255) NOT NULL,
             original_url VARCHAR(255) NOT NULL UNIQUE
-        )
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_original_url ON urls(original_url);
     `)
-	if err != nil {
-		return err
-	}
 	return err
 }
 
