@@ -49,7 +49,11 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 		err := s.Storage.SetURL(id, item.OriginalURL)
 		if err == db.ErrURLAlreadyExists {
 			shortURL, _ := s.Storage.GetURL(id)
-			return c.Status(http.StatusConflict).SendString(shortURL)
+			resp = append(resp, models.BatchShortenResponse{
+				CorrelationID: item.CorrelationID,
+				ShortURL:      shortURL,
+			})
+			continue
 		} else if err != nil {
 			return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
 		}
