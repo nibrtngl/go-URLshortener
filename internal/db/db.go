@@ -52,7 +52,7 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-// 12
+// 123
 func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
 	query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (original_url) DO UPDATE SET short_url = excluded.short_url RETURNING short_url`
 	row := s.pool.QueryRow(context.Background(), query, id, url)
