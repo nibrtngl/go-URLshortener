@@ -118,9 +118,8 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			URL:          "",
 		},
 	}
-	server.Storage.SetURL("invalid_id", "!$#09")
-	server.Storage.SetURL("1", "http://yandex.ru")
-
+	_, _ = server.Storage.SetURL("invalid_id", "!$#09")
+	_, _ = server.Storage.SetURL("1", "http://yandex.ru")
 	for _, test := range tests {
 
 		req := httptest.NewRequest(http.MethodGet, test.path, nil)
