@@ -45,8 +45,27 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 			return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 		}
 
-		id := generateShortID()
-		s.Storage.SetURL(id, item.OriginalURL)
+		id, err := s.Storage.GetURL(item.OriginalURL)
+		if err == nil {
+			shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+			resp = append(resp, models.BatchShortenResponse{
+				CorrelationID: item.CorrelationID,
+				ShortURL:      shortURL,
+			})
+			continue
+		}
+
+		id = generateShortID()
+		err = s.Storage.SetURL(id, item.OriginalURL)
+		if err == db.ErrURLAlreadyExists {
+			shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+			return c.Status(http.StatusConflict).JSON(models.BatchShortenResponse{
+				CorrelationID: item.CorrelationID,
+				ShortURL:      shortURL,
+			})
+		} else if err != nil {
+			return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
+		}
 
 		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 		resp = append(resp, models.BatchShortenResponse{
@@ -60,7 +79,7 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 
 func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 	var storage Storable
-
+	//1
 	if cfg.DatabaseDSN != "" {
 		storage = db.NewDatabaseStorage(pool)
 	} else {
