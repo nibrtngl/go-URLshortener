@@ -16,7 +16,7 @@ import (
 
 type Storable interface {
 	GetURL(id string) (string, error)
-	SetURL(id, url string) error
+	SetURL(id, url string) (string, error)
 	GetAllKeys() ([]string, error)
 	Ping() error
 }

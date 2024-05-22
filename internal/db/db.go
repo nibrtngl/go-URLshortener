@@ -48,16 +48,23 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *DatabaseStorage) SetURL(id, url string) error {
-	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
+func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
+	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (original_url) DO NOTHING"
 	result, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
-		return fmt.Errorf("failed to insert URL into database: %v", err)
+		return "", fmt.Errorf("failed to insert URL into database: %v", err)
 	}
 	if result.RowsAffected() == 0 {
-		return fmt.Errorf("no rows were inserted")
+		query := "SELECT short_url FROM urls WHERE original_url = $1"
+		row := s.pool.QueryRow(context.Background(), query, url)
+		var shortURL string
+		err := row.Scan(&shortURL)
+		if err != nil {
+			return "", fmt.Errorf("failed to get short URL from database: %v", err)
+		}
+		return shortURL, nil
 	}
-	return nil
+	return id, nil
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
