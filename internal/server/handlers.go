@@ -15,21 +15,15 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
-	// Попытка получить сокращенный URL из базы данных
-	shortURL, err := s.Storage.GetURL(string(originalURL))
-	if err == nil {
-		// Если сокращенный URL уже существует, вернуть его с HTTP-статусом 409 Conflict
-		return c.Status(http.StatusConflict).SendString(shortURL)
-	}
-
 	id := generateShortID()
-	err = s.Storage.SetURL(id, string(originalURL))
+	s.Storage.SetURL(id, string(originalURL))
+
+	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
-		logrus.Errorf("Failed to set URL: %v", err)
-		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
+		logrus.Errorf("Failed to save storage to file: %v", err)
 	}
 
-	shortURL, _ = url.JoinPath(s.ShortURLPrefix, id)
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
@@ -61,24 +55,10 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
-	// Попытка получить сокращенный URL из базы данных
-	shortURL, err := s.Storage.GetURL(req.URL)
-	if err == nil {
-		// Если сокращенный URL уже существует, вернуть его с HTTP-статусом 409 Conflict
-		resp := models.ShortenResponse{
-			Result: shortURL,
-		}
-		return c.Status(http.StatusConflict).JSON(resp)
-	}
-
 	id := generateShortID()
-	err = s.Storage.SetURL(id, req.URL)
-	if err != nil {
-		logrus.Errorf("Failed to set URL: %v", err)
-		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
-	}
+	s.Storage.SetURL(id, req.URL)
 
-	shortURL, _ = url.JoinPath(s.ShortURLPrefix, id)
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
 	resp := models.ShortenResponse{
 		Result: shortURL,
