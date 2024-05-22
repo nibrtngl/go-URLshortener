@@ -19,7 +19,7 @@ type ErrorResponse struct {
 }
 
 type ShortenResponse struct {
-	ShortURL string `json:"short_url"`
+	Result string `json:"result"`
 }
 
 type ShortenRequest struct {
