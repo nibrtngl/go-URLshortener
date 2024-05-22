@@ -59,7 +59,18 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
-	return nil
+	id, err := s.Storage.SetURL(generateShortID(), req.URL)
+	if err != nil {
+		s.Logger.Error("Internal Server Error: ", err)
+		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
+	}
+
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+	response := models.ShortenResponse{
+		ShortURL: shortURL,
+	}
+
+	return c.Status(http.StatusCreated).JSON(response)
 }
 
 func (s *Server) PingHandler(c *fiber.Ctx) error {
