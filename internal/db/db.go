@@ -50,11 +50,12 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 
 func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
 	query := `
-		INSERT INTO urls (short_url, original_url) 
-		VALUES ($1, $2) 
-		ON CONFLICT (original_url) DO NOTHING 
-		RETURNING short_url
-	`
+        INSERT INTO urls (short_url, original_url) 
+        VALUES ($1, $2) 
+        ON CONFLICT (original_url) DO UPDATE 
+        SET short_url = urls.short_url
+        RETURNING short_url
+    `
 	row := s.pool.QueryRow(context.Background(), query, id, url)
 	var shortURL string
 	err := row.Scan(&shortURL)
