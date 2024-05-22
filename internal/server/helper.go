@@ -26,7 +26,7 @@ func generateShortID() string {
 	return string(b)
 }
 
-func (s *Server) saveStorageToFile(filePath string) error {
+func (s *Server) SaveStorageToFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
