@@ -67,7 +67,7 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 	response := models.ShortenResponse{
-		ShortURL: shortURL,
+		Result: shortURL,
 	}
 
 	return c.Status(http.StatusCreated).JSON(response)
