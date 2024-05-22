@@ -50,25 +50,19 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
+func (s *DatabaseStorage) SetURL(id, url string) error {
 	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
 	_, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == pgerrcode.UniqueViolation {
-				query := "SELECT short_url FROM urls WHERE original_url = $1"
-				row := s.pool.QueryRow(context.Background(), query, url)
-				var shortURL string
-				if err := row.Scan(&shortURL); err != nil {
-					return "", fmt.Errorf("failed to get short URL from database: %v", err)
-				}
-				return shortURL, nil
+				return nil
 			}
 		}
-		return "", fmt.Errorf("failed to insert URL into database: %v", err)
+		return fmt.Errorf("failed to insert URL into database: %v", err)
 	}
-	return "", nil
+	return nil
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
