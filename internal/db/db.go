@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -13,7 +15,7 @@ func InitDB(pool *pgxpool.Pool) error {
         CREATE TABLE IF NOT EXISTS urls (
             id SERIAL PRIMARY KEY,
             short_url VARCHAR(255) NOT NULL,
-            original_url VARCHAR(255) NOT NULL
+            original_url VARCHAR(255) NOT NULL UNIQUE
         )
     `)
 	if err != nil {
@@ -48,16 +50,25 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *DatabaseStorage) SetURL(id, url string) error {
+func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
 	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	result, err := s.pool.Exec(context.Background(), query, id, url)
+	_, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
-		return fmt.Errorf("failed to insert URL into database: %v", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				query := "SELECT short_url FROM urls WHERE original_url = $1"
+				row := s.pool.QueryRow(context.Background(), query, url)
+				var shortURL string
+				if err := row.Scan(&shortURL); err != nil {
+					return "", fmt.Errorf("failed to get short URL from database: %v", err)
+				}
+				return shortURL, nil
+			}
+		}
+		return "", fmt.Errorf("failed to insert URL into database: %v", err)
 	}
-	if result.RowsAffected() == 0 {
-		return fmt.Errorf("no rows were inserted")
-	}
-	return nil
+	return "", nil
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
