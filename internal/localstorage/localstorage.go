@@ -22,9 +22,9 @@ func (s *InternalStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *InternalStorage) SetURL(id, url string) (string, error) {
+func (s *InternalStorage) SetURL(id, url string) error {
 	s.urls[id] = url
-	return url, nil
+	return nil
 }
 
 func (s *InternalStorage) GetAllKeys() ([]string, error) {
