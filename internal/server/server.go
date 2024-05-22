@@ -115,7 +115,7 @@ func (s *Server) Run() error {
 	s.setupRoutes()
 
 	if s.Cfg.FileStoragePath != "" {
-		err := s.SaveStorageToFile(s.Cfg.FileStoragePath)
+		err := s.saveStorageToFile(s.Cfg.FileStoragePath)
 		if err != nil {
 			s.Logger.Errorf("Failed to save storage to file: %v", err)
 		}

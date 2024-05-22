@@ -19,7 +19,7 @@ func main() {
 	if err := env.Parse(&cfg); err != nil {
 		logrus.Errorf("Ошибка при парсинге переменных окружения: %v", err)
 	}
-
+	//123
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -73,11 +73,13 @@ func main() {
 		server := server.NewServer(cfg, pool)
 		logger.Infof("Запуск сервера на адресе %s", cfg.Address)
 
-		defer func() {
-			if err := server.SaveStorageToFile(cfg.FileStoragePath); err != nil {
-				logger.Errorf("Failed to save storage to file: %v", err)
-			}
-		}()
+		if err := server.Run(); err != nil {
+			logger.Fatalf("Ошибка запуска сервера: %v", err)
+		}
+	} else {
+		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
+		server := server.NewServer(cfg, nil)
+		logger.Infof("Запуск сервера на адресе %s", cfg.Address)
 
 		if err := server.Run(); err != nil {
 			logger.Fatalf("Ошибка запуска сервера: %v", err)
