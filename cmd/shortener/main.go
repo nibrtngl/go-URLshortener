@@ -19,7 +19,7 @@ func main() {
 	if err := env.Parse(&cfg); err != nil {
 		logrus.Errorf("Ошибка при парсинге переменных окружения: %v", err)
 	}
-	//1
+	//12
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
