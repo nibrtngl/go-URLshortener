@@ -29,11 +29,6 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
 	}
 
-	err = s.saveStorageToFile(s.Cfg.FileStoragePath)
-	if err != nil {
-		logrus.Errorf("Failed to save storage to file: %v", err)
-	}
-
 	shortURL, _ = url.JoinPath(s.ShortURLPrefix, id)
 
 	return c.Status(http.StatusCreated).SendString(shortURL)
