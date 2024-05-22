@@ -2,10 +2,9 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v4"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 )
@@ -13,20 +12,19 @@ import (
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	originalURL := c.Body()
 	if !isValidURL(string(originalURL)) {
-		s.Logger.Error("Bad Request: Invalid URL format")
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
-	id, err := s.Storage.SetURL(generateShortID(), string(originalURL))
+
+	id := generateShortID()
+	s.Storage.SetURL(id, string(originalURL))
+
+	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			s.Logger.Warn("Conflict: URL already exists")
-			return c.Status(http.StatusConflict).SendString("Conflict: URL already exists")
-		}
-		s.Logger.Error("Internal Server Error: ", err)
-		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
+		logrus.Errorf("Failed to save storage to file: %v", err)
 	}
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
 
@@ -47,7 +45,6 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req models.ShortenRequest
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
-		s.Logger.Error("Bad Request: Invalid json format")
 		errResponse := models.ErrorResponse{
 			Error: "bad request: Invalid json format",
 		}
@@ -55,22 +52,19 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	if !isValidURL(req.URL) {
-		s.Logger.Error("Bad Request: Invalid URL format")
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
-	id, err := s.Storage.SetURL(generateShortID(), req.URL)
-	if err != nil {
-		s.Logger.Error("Internal Server Error: ", err)
-		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
-	}
+	id := generateShortID()
+	s.Storage.SetURL(id, req.URL)
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
-	response := models.ShortenResponse{
+
+	resp := models.ShortenResponse{
 		Result: shortURL,
 	}
 
-	return c.Status(http.StatusCreated).JSON(response)
+	return c.Status(http.StatusCreated).JSON(resp)
 }
 
 func (s *Server) PingHandler(c *fiber.Ctx) error {

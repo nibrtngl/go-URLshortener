@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -52,14 +54,26 @@ func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
 	query := `
         INSERT INTO urls (short_url, original_url) 
         VALUES ($1, $2) 
-        ON CONFLICT (original_url) DO UPDATE 
-        SET short_url = urls.short_url
+        ON CONFLICT (original_url) DO NOTHING
         RETURNING short_url
     `
 	row := s.pool.QueryRow(context.Background(), query, id, url)
 	var shortURL string
 	err := row.Scan(&shortURL)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				// If a unique violation error occurred, retrieve the existing short URL
+				query := "SELECT short_url FROM urls WHERE original_url = $1"
+				row := s.pool.QueryRow(context.Background(), query, url)
+				err := row.Scan(&shortURL)
+				if err != nil {
+					return "", fmt.Errorf("failed to retrieve existing short URL from database: %v", err)
+				}
+				return shortURL, nil
+			}
+		}
 		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
 	}
 	return shortURL, nil
