@@ -17,6 +17,11 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 
 	id := generateShortID()
 
+	_, err := s.Storage.GetURL(id)
+	if err == nil {
+		return c.Status(http.StatusConflict).SendString("Conflict: URL already exists")
+	}
+
 	dbid, err := s.Storage.SetURL(id, string(originalURL))
 	if err != nil {
 		logrus.Errorf("Failed to save url: %v", err)
@@ -60,6 +65,13 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
+	_, err := s.Storage.GetURL(id)
+	if err == nil {
+		errResponse := models.ErrorResponse{
+			Error: "Conflict: URL already exists",
+		}
+		return c.Status(http.StatusConflict).JSON(errResponse)
+	}
 	dbid, err := s.Storage.SetURL(id, req.URL)
 
 	if err != nil {
