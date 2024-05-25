@@ -57,7 +57,6 @@ func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
 	}
-	
 	query = `
      SELECT short_url FROM urls WHERE original_url = $1;`
 	row := s.pool.QueryRow(context.Background(), query, url)

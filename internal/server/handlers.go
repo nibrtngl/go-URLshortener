@@ -18,19 +18,18 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	id := generateShortID()
 
 	dbid, err := s.Storage.SetURL(id, string(originalURL))
-	if err != nil {
-		logrus.Errorf("Failed to save url: %v", err)
-	}
-
-	err = s.saveStorageToFile(s.Cfg.FileStoragePath)
-	if err != nil {
-		if err.Error() == "URL already exists" {
-			return c.Status(http.StatusConflict).SendString("Conflict: URL already exists")
-		}
-		logrus.Errorf("Failed to save url: %v", err)
-	}
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
+	if err != nil {
+		logrus.Errorf("Failed to save url: %v", err)
+	}
+	if dbid != id {
+		return c.Status(http.StatusConflict).SendString(shortURL)
+	}
+	err = s.saveStorageToFile(s.Cfg.FileStoragePath)
+	if err != nil {
+		logrus.Errorf("Failed to save storage to file: %v", err)
+	}
 
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
@@ -63,29 +62,19 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	_, err := s.Storage.GetURL(id)
-	if err == nil {
-		errResponse := models.ErrorResponse{
-			Error: "Conflict: URL already exists",
-		}
-		return c.Status(http.StatusConflict).JSON(errResponse)
-	}
 	dbid, err := s.Storage.SetURL(id, req.URL)
 
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
+
 	if err != nil {
-		if err.Error() == "URL already exists" {
-			errResponse := models.ErrorResponse{
-				Error: "Conflict: URL already exists",
-			}
-			return c.Status(http.StatusConflict).JSON(errResponse)
-		}
 		errResponse := models.ErrorResponse{
 			Error: err.Error(),
 		}
 		return c.Status(http.StatusBadRequest).JSON(errResponse)
 	}
-
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
+	if dbid != id {
+		return c.Status(http.StatusConflict).SendString(shortURL)
+	}
 
 	resp := models.ShortenResponse{
 		Result: shortURL,
