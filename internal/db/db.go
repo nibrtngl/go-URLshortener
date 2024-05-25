@@ -11,9 +11,8 @@ import (
 func InitDB(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(), `
         CREATE TABLE IF NOT EXISTS urls (
-            id SERIAL PRIMARY KEY,
-            short_url VARCHAR(255) NOT NULL,
-            original_url VARCHAR(255) NOT NULL
+            short_url VARCHAR(255) ,
+            original_url VARCHAR(255) PRIMARY KEY 
         )
     `)
 	if err != nil {
@@ -48,16 +47,25 @@ func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *DatabaseStorage) SetURL(id, url string) error {
-	query := "INSERT INTO urls (short_url, original_url) VALUES ($1, $2)"
-	result, err := s.pool.Exec(context.Background(), query, id, url)
+func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
+	query := `
+        INSERT INTO urls (short_url, original_url) 
+        VALUES ($1, $2) 
+        ON CONFLICT (original_url) DO NOTHING
+    `
+	_, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
-		return fmt.Errorf("failed to insert URL into database: %v", err)
+		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
 	}
-	if result.RowsAffected() == 0 {
-		return fmt.Errorf("no rows were inserted")
+	query = `
+     SELECT short_url FROM urls WHERE original_url = $1;`
+	row := s.pool.QueryRow(context.Background(), query, url)
+	var shortURL string
+	err = row.Scan(&shortURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
 	}
-	return nil
+	return shortURL, nil
 }
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {

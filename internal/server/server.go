@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fiber-apis/internal/db"
 	"fiber-apis/internal/localstorage"
 	"fiber-apis/internal/models"
@@ -9,14 +8,12 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"net/url"
 	"os"
 )
 
 type Storable interface {
 	GetURL(id string) (string, error)
-	SetURL(id, url string) error
+	SetURL(id, url string) (string, error)
 	GetAllKeys() ([]string, error)
 	Ping() error
 }
@@ -28,34 +25,6 @@ type Server struct {
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
-}
-
-func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
-	var req []models.BatchShortenRequest
-	if err := json.Unmarshal(c.Body(), &req); err != nil {
-		errResponse := models.ErrorResponse{
-			Error: "bad request: Invalid json format",
-		}
-		return c.Status(http.StatusBadRequest).JSON(errResponse)
-	}
-
-	var resp []models.BatchShortenResponse
-	for _, item := range req {
-		if !isValidURL(item.OriginalURL) {
-			return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
-		}
-
-		id := generateShortID()
-		s.Storage.SetURL(id, item.OriginalURL)
-
-		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
-		resp = append(resp, models.BatchShortenResponse{
-			CorrelationID: item.CorrelationID,
-			ShortURL:      shortURL,
-		})
-	}
-
-	return c.Status(http.StatusCreated).JSON(resp)
 }
 
 func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {

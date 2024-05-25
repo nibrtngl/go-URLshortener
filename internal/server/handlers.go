@@ -16,14 +16,19 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, string(originalURL))
 
-	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
+	dbid, err := s.Storage.SetURL(id, string(originalURL))
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
+	if err != nil {
+		logrus.Errorf("Failed to save url: %v", err)
+	}
+	if dbid != id {
+		return c.Status(http.StatusConflict).SendString(shortURL)
+	}
+	err = s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
 		logrus.Errorf("Failed to save storage to file: %v", err)
 	}
-
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
@@ -56,12 +61,50 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, req.URL)
+	dbid, err := s.Storage.SetURL(id, req.URL)
 
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 
 	resp := models.ShortenResponse{
 		Result: shortURL,
+	}
+
+	if dbid != id {
+		return c.Status(http.StatusConflict).JSON(resp)
+	}
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Error: err.Error(),
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
+	}
+
+	return c.Status(http.StatusCreated).JSON(resp)
+}
+
+func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
+	var req []models.BatchShortenRequest
+	if err := json.Unmarshal(c.Body(), &req); err != nil {
+		errResponse := models.ErrorResponse{
+			Error: "bad request: Invalid json format",
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
+	}
+
+	var resp []models.BatchShortenResponse
+	for _, item := range req {
+		if !isValidURL(item.OriginalURL) {
+			return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
+		}
+
+		id := generateShortID()
+		s.Storage.SetURL(id, item.OriginalURL)
+
+		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+		resp = append(resp, models.BatchShortenResponse{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      shortURL,
+		})
 	}
 
 	return c.Status(http.StatusCreated).JSON(resp)
