@@ -19,7 +19,7 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 
 	dbid, err := s.Storage.SetURL(id, string(originalURL))
 	if err != nil {
-		logrus.Errorf("Failed to save storage to file: %v", err)
+		logrus.Errorf("Failed to save url: %v", err)
 	}
 
 	err = s.saveStorageToFile(s.Cfg.FileStoragePath)

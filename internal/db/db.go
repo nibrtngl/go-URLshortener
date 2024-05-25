@@ -52,25 +52,18 @@ func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
         INSERT INTO urls (short_url, original_url) 
         VALUES ($1, $2) 
         ON CONFLICT (original_url) DO NOTHING
-        RETURNING short_url
     `
-	row := s.pool.QueryRow(context.Background(), query, id, url)
-	var shortURL string
-	err := row.Scan(&shortURL)
+	_, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
-		//var pgErr *pgconn.PgError
-		//if errors.As(err, &pgErr) {
-		//	if pgErr.Code == pgerrcode.UniqueViolation {
-		//		// если произошла ошибка уникальности, значит такой URL уже есть в базе
-		//		query := "SELECT short_url FROM urls WHERE original_url = $1"
-		//		row := s.pool.QueryRow(context.Background(), query, url)
-		//		err := row.Scan(&shortURL)
-		//		if err != nil {
-		//			return "", fmt.Errorf("failed to retrieve existing short URL from database: %v", err)
-		//		}
-		//		return shortURL, nil
-		//	}
-		//}
+		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
+	}
+	
+	query = `
+     SELECT short_url FROM urls WHERE original_url = $1;`
+	row := s.pool.QueryRow(context.Background(), query, url)
+	var shortURL string
+	err = row.Scan(&shortURL)
+	if err != nil {
 		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
 	}
 	return shortURL, nil
