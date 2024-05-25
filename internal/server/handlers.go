@@ -18,7 +18,6 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	id := generateShortID()
 
 	dbid, err := s.Storage.SetURL(id, string(originalURL))
-
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 	if err != nil {
 		logrus.Errorf("Failed to save url: %v", err)
@@ -72,12 +71,12 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 		}
 		return c.Status(http.StatusBadRequest).JSON(errResponse)
 	}
-	if dbid != id {
-		return c.Status(http.StatusConflict).SendString(shortURL)
-	}
 
 	resp := models.ShortenResponse{
 		Result: shortURL,
+	}
+	if dbid != id {
+		return c.Status(http.StatusConflict).JSON(resp)
 	}
 
 	return c.Status(http.StatusCreated).JSON(resp)
