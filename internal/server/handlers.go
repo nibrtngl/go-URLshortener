@@ -16,14 +16,18 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, string(originalURL))
 
-	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
+	dbid, err := s.Storage.SetURL(id, string(originalURL))
 	if err != nil {
 		logrus.Errorf("Failed to save storage to file: %v", err)
 	}
 
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+	err = s.saveStorageToFile(s.Cfg.FileStoragePath)
+	if err != nil {
+		logrus.Errorf("Failed to save storage to file: %v", err)
+	}
+
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
@@ -56,9 +60,16 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, req.URL)
+	dbid, err := s.Storage.SetURL(id, req.URL)
 
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Error: err.Error(),
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
+	}
+
+	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 
 	resp := models.ShortenResponse{
 		Result: shortURL,
