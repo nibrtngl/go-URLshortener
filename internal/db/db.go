@@ -11,8 +11,8 @@ import (
 func InitDB(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(), `
         CREATE TABLE IF NOT EXISTS urls (
-            short_url VARCHAR(255) PRIMARY KEY,
-            original_url VARCHAR(255) NOT NULL
+            short_url VARCHAR(255) ,
+            original_url VARCHAR(255) PRIMARY KEY 
         )
     `)
 	if err != nil {
