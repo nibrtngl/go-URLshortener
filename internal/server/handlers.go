@@ -78,6 +78,34 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(resp)
 }
 
+func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
+	var req []models.BatchShortenRequest
+	if err := json.Unmarshal(c.Body(), &req); err != nil {
+		errResponse := models.ErrorResponse{
+			Error: "bad request: Invalid json format",
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
+	}
+
+	var resp []models.BatchShortenResponse
+	for _, item := range req {
+		if !isValidURL(item.OriginalURL) {
+			return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
+		}
+
+		id := generateShortID()
+		s.Storage.SetURL(id, item.OriginalURL)
+
+		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+		resp = append(resp, models.BatchShortenResponse{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      shortURL,
+		})
+	}
+
+	return c.Status(http.StatusCreated).JSON(resp)
+}
+
 func (s *Server) PingHandler(c *fiber.Ctx) error {
 	err := s.Storage.Ping()
 	if err != nil {

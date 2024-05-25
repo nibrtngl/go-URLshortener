@@ -77,6 +77,7 @@ func (s *Server) setupRoutes() {
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/ping", s.PingHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
+	s.App.Post("/api/shorten/batch", s.shortenBatchURLHandler)
 }
 
 func (s *Server) Run() error {
