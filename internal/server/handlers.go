@@ -65,18 +65,18 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 
+	resp := models.ShortenResponse{
+		Result: shortURL,
+	}
+
+	if dbid != id {
+		return c.Status(http.StatusConflict).JSON(resp)
+	}
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Error: err.Error(),
 		}
 		return c.Status(http.StatusBadRequest).JSON(errResponse)
-	}
-
-	resp := models.ShortenResponse{
-		Result: shortURL,
-	}
-	if dbid != id {
-		return c.Status(http.StatusConflict).JSON(resp)
 	}
 
 	return c.Status(http.StatusCreated).JSON(resp)
