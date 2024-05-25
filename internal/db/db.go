@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -13,8 +11,7 @@ import (
 func InitDB(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(), `
         CREATE TABLE IF NOT EXISTS urls (
-            id SERIAL PRIMARY KEY,
-            short_url VARCHAR(255) NOT NULL,
+            short_url VARCHAR(255) PRIMARY KEY,
             original_url VARCHAR(255) NOT NULL
         )
     `)
@@ -61,19 +58,19 @@ func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
 	var shortURL string
 	err := row.Scan(&shortURL)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			if pgErr.Code == pgerrcode.UniqueViolation {
-				// если произошла ошибка уникальности, значит такой URL уже есть в базе
-				query := "SELECT short_url FROM urls WHERE original_url = $1"
-				row := s.pool.QueryRow(context.Background(), query, url)
-				err := row.Scan(&shortURL)
-				if err != nil {
-					return "", fmt.Errorf("failed to retrieve existing short URL from database: %v", err)
-				}
-				return shortURL, nil
-			}
-		}
+		//var pgErr *pgconn.PgError
+		//if errors.As(err, &pgErr) {
+		//	if pgErr.Code == pgerrcode.UniqueViolation {
+		//		// если произошла ошибка уникальности, значит такой URL уже есть в базе
+		//		query := "SELECT short_url FROM urls WHERE original_url = $1"
+		//		row := s.pool.QueryRow(context.Background(), query, url)
+		//		err := row.Scan(&shortURL)
+		//		if err != nil {
+		//			return "", fmt.Errorf("failed to retrieve existing short URL from database: %v", err)
+		//		}
+		//		return shortURL, nil
+		//	}
+		//}
 		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
 	}
 	return shortURL, nil

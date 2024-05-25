@@ -45,12 +45,12 @@ func main() {
 	}
 
 	if *address == "" {
-		*address = "localhost:8080"
+		*address = "localhost:8081"
 	}
 	if *baseURL == "" {
-		*baseURL = "http://localhost:8080"
+		*baseURL = "http://localhost:8081"
 	}
-
+	dbDSN = "host=localhost port=5432 dbname=postgres user=postgres password=postgres connect_timeout=10 sslmode=prefer"
 	cfg.Address = *address
 	cfg.BaseURL = *baseURL
 	cfg.FileStoragePath = *fileStoragePath
