@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"net/url"
 )
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
@@ -16,14 +15,16 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, string(originalURL))
+	shortURL, err := s.Storage.SetURL(id, string(originalURL))
+	if err != nil {
+		logrus.Errorf("Failed to set URL: %v", err)
+		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error: Failed to set URL")
+	}
 
-	err := s.saveStorageToFile(s.Cfg.FileStoragePath)
+	err = s.saveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
 		logrus.Errorf("Failed to save storage to file: %v", err)
 	}
-
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
@@ -56,9 +57,11 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	s.Storage.SetURL(id, req.URL)
-
-	shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
+	shortURL, err := s.Storage.SetURL(id, req.URL)
+	if err != nil {
+		logrus.Errorf("Failed to set URL: %v", err)
+		return c.Status(http.StatusInternalServerError).SendString("Internal Server Error: Failed to set URL")
+	}
 
 	resp := models.ShortenResponse{
 		Result: shortURL,
