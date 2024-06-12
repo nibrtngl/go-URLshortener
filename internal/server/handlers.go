@@ -11,13 +11,16 @@ import (
 
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	originalURL := c.Body()
+	userID := c.Cookies("userID")
+
 	if !isValidURL(string(originalURL)) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
 	id := generateShortID()
 
-	dbid, err := s.Storage.SetURL(id, string(originalURL))
+	dbid, err := s.Storage.SetURL(id, string(originalURL), userID)
+	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 	if err != nil {
 		logrus.Errorf("Failed to save url: %v", err)
@@ -35,7 +38,9 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
-	originalURL, err := s.Storage.GetURL(id)
+	userID := c.Cookies("userID")
+	originalURL, err := s.Storage.GetURL(id, userID)
+	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	if err != nil {
 		return c.Status(http.StatusNotFound).SendString("404, not found")
 	}
@@ -61,7 +66,7 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	dbid, err := s.Storage.SetURL(id, req.URL)
+	dbid, err := s.Storage.SetURL(id, req.URL, c.Cookies("userID"))
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 
@@ -98,7 +103,7 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 		}
 
 		id := generateShortID()
-		s.Storage.SetURL(id, item.OriginalURL)
+		s.Storage.SetURL(id, item.OriginalURL, c.Cookies("userID"))
 
 		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 		resp = append(resp, models.BatchShortenResponse{

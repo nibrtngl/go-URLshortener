@@ -14,7 +14,7 @@ func NewInternalStorage() *InternalStorage {
 	}
 }
 
-func (s *InternalStorage) GetURL(shortURL string) (string, error) {
+func (s *InternalStorage) GetURL(shortURL string, userID string) (string, error) {
 	originalURL, ok := s.urls[shortURL]
 	if !ok {
 		return "", errors.New("url not found")
@@ -22,7 +22,7 @@ func (s *InternalStorage) GetURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *InternalStorage) SetURL(id, url string) (string, error) {
+func (s *InternalStorage) SetURL(id, url string, userID string) (string, error) {
 	if _, ok := s.urls[id]; ok {
 		return "", errors.New("url already exists")
 	}
