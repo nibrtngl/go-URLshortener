@@ -31,9 +31,9 @@ func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
 	}
 }
 
-func (s *DatabaseStorage) GetURL(shortURL string, userID string) (string, error) {
+func (s *DatabaseStorage) GetURL(shortURL string) (string, error) {
 	query := "SELECT original_url FROM urls WHERE short_url = $1"
-	row := s.pool.QueryRow(context.Background(), query, shortURL, userID)
+	row := s.pool.QueryRow(context.Background(), query, shortURL)
 
 	var originalURL string
 	err := row.Scan(&originalURL)
@@ -46,38 +46,14 @@ func (s *DatabaseStorage) GetURL(shortURL string, userID string) (string, error)
 
 	return originalURL, nil
 }
-func (s *DatabaseStorage) GetUserURLs(userID string) ([]string, error) {
-	// метод для получения всех URL пользователя
-	query := "SELECT original_url FROM urls WHERE user_id = $1"
-	rows, err := s.pool.Query(context.Background(), query, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve URLs from database: %v", err)
-	}
-	defer rows.Close()
 
-	var urls []string
-	for rows.Next() {
-		var url string
-		if err := rows.Scan(&url); err != nil {
-			return nil, fmt.Errorf("failed to scan URL: %v", err)
-		}
-		urls = append(urls, url)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to retrieve URLs from database: %v", err)
-	}
-
-	return urls, nil
-}
-
-func (s *DatabaseStorage) SetURL(id, url string, userID string) (string, error) {
+func (s *DatabaseStorage) SetURL(id, url string) (string, error) {
 	query := `
         INSERT INTO urls (short_url, original_url) 
         VALUES ($1, $2) 
         ON CONFLICT (original_url) DO NOTHING
     `
-	_, err := s.pool.Exec(context.Background(), query, id, url, userID)
+	_, err := s.pool.Exec(context.Background(), query, id, url)
 	if err != nil {
 		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
 	}
