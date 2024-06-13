@@ -7,19 +7,50 @@ import (
 	"fiber-apis/internal/server"
 	"flag"
 	"github.com/caarlos0/env/v10"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"os"
 	"time"
 )
 
 func main() {
 	var cfg models.Config
+	var (
+		hashKey  = []byte("very-secret")
+		blockKey = []byte("a-lot-secret")
+		s        = securecookie.New(hashKey, blockKey)
+	)
+	app := fiber.New()
 
+	app.Get("/", func(c *fiber.Ctx) error {
+		cookie := c.Cookies("userID")
+
+		value := make(map[string]string)
+		err := s.Decode("userID", cookie, &value)
+		if err != nil || value["userID"] == "" {
+			// Если куки не существует или она не проходит проверку подлинности,
+			// создаем новую куку с уникальным идентификатором пользователя
+			value = map[string]string{
+				"userID": "1",
+			}
+			encoded, err := s.Encode("userID", value)
+			if err == nil {
+				c.Cookie(&fiber.Cookie{
+					Name:     "userID",
+					Value:    encoded,
+					HTTPOnly: true,
+				})
+			}
+		}
+
+		return c.SendStatus(http.StatusOK)
+	})
 	if err := env.Parse(&cfg); err != nil {
 		logrus.Errorf("Ошибка при парсинге переменных окружения: %v", err)
 	}
-	//123
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,

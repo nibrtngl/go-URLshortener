@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"os"
 )
 
@@ -15,6 +16,7 @@ type Storable interface {
 	GetURL(shortURL string, userID string) (string, error)
 	SetURL(id, url string, userID string) (string, error)
 	GetAllKeys() ([]string, error)
+	GetUserURLs(userID string) ([]models.URL, error)
 	Ping() error
 }
 
@@ -71,6 +73,37 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 
 	return server
 }
+func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
+	userID := c.Cookies("userID")
+
+	// Если кука не содержит ID пользователя, возвращаем HTTP-статус 401 Unauthorized
+	if userID == "" {
+		return c.Status(http.StatusUnauthorized).SendString("Unauthorized: User ID not found in cookies")
+	}
+
+	urls, err := s.Storage.GetUserURLs(userID)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get user URLs",
+		})
+	}
+
+	// Если список URL пуст, возвращаем HTTP-статус 204 No Content
+	if len(urls) == 0 {
+		return c.Status(http.StatusNoContent).SendString("No Content: No URLs found for this user")
+	}
+
+	// Формирование ответа
+	response := make([]map[string]string, len(urls))
+	for i, url := range urls {
+		response[i] = map[string]string{
+			"short_url":    s.ShortURLPrefix + url.ShortURL,
+			"original_url": url.OriginalURL,
+		}
+	}
+
+	return c.JSON(response)
+}
 
 func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
@@ -78,6 +111,9 @@ func (s *Server) setupRoutes() {
 	s.App.Get("/ping", s.PingHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
 	s.App.Post("/api/shorten/batch", s.shortenBatchURLHandler)
+	s.App.Get("/api/user/urls", func(c *fiber.Ctx) error {
+		return s.getUserURLsHandler(c)
+	})
 }
 
 func (s *Server) Run() error {
