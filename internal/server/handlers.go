@@ -54,6 +54,8 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 
 func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req models.ShortenRequest
+	userID := c.Cookies("userID")
+	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
 			Error: "bad request: Invalid json format",
@@ -89,6 +91,8 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 
 func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 	var req []models.BatchShortenRequest
+	userID := c.Cookies("userID")
+	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
 			Error: "bad request: Invalid json format",

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fiber-apis/internal/models"
 	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -12,7 +13,8 @@ func InitDB(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(), `
         CREATE TABLE IF NOT EXISTS urls (
             short_url VARCHAR(255) ,
-            original_url VARCHAR(255) PRIMARY KEY 
+            original_url VARCHAR(255) PRIMARY KEY,
+			user_id VARCHAR(255)
         )
     `)
 	if err != nil {
@@ -32,7 +34,7 @@ func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
 }
 
 func (s *DatabaseStorage) GetURL(shortURL string, userID string) (string, error) {
-	query := "SELECT original_url FROM urls WHERE short_url = $1"
+	query := "SELECT original_url FROM urls WHERE short_url = $1 AND user_id = $2"
 	row := s.pool.QueryRow(context.Background(), query, shortURL, userID)
 
 	var originalURL string
@@ -49,8 +51,8 @@ func (s *DatabaseStorage) GetURL(shortURL string, userID string) (string, error)
 
 func (s *DatabaseStorage) SetURL(id, url string, userID string) (string, error) {
 	query := `
-        INSERT INTO urls (short_url, original_url) 
-        VALUES ($1, $2) 
+        INSERT INTO urls (short_url, original_url, user_id)
+        VALUES ($1, $2, $3)
         ON CONFLICT (original_url) DO NOTHING
     `
 	_, err := s.pool.Exec(context.Background(), query, id, url, userID)
@@ -58,8 +60,8 @@ func (s *DatabaseStorage) SetURL(id, url string, userID string) (string, error) 
 		return "", fmt.Errorf("failed to insert or retrieve URL from database: %v", err)
 	}
 	query = `
-     SELECT short_url FROM urls WHERE original_url = $1;`
-	row := s.pool.QueryRow(context.Background(), query, url)
+     SELECT short_url FROM urls WHERE original_url = $1 AND user_id = $2;`
+	row := s.pool.QueryRow(context.Background(), query, url, userID)
 	var shortURL string
 	err = row.Scan(&shortURL)
 	if err != nil {
@@ -70,6 +72,26 @@ func (s *DatabaseStorage) SetURL(id, url string, userID string) (string, error) 
 
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
 	return nil, nil
+}
+
+func (s *DatabaseStorage) GetUserURLs(userID string) ([]models.URL, error) {
+	query := "SELECT short_url, original_url FROM urls WHERE user_id = $1"
+	rows, err := s.pool.Query(context.Background(), query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user URLs from database: %v", err)
+	}
+	defer rows.Close()
+
+	var urls []models.URL
+	for rows.Next() {
+		var url models.URL
+		if err := rows.Scan(&url.ShortURL, &url.OriginalURL); err != nil {
+			return nil, fmt.Errorf("failed to scan user URL: %v", err)
+		}
+		urls = append(urls, url)
+	}
+
+	return urls, nil
 }
 
 func (s *DatabaseStorage) Ping() error {
