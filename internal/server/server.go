@@ -93,7 +93,6 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 		return c.Status(http.StatusNoContent).SendString("No Content: No URLs found for this user")
 	}
 
-	// Формирование ответа
 	response := make([]map[string]string, len(urls))
 	for i, url := range urls {
 		response[i] = map[string]string{
@@ -102,7 +101,7 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.JSON(response)
+	return c.Status(http.StatusOK).JSON(response)
 }
 
 func (s *Server) setupRoutes() {
