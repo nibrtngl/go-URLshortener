@@ -25,6 +25,8 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 				HTTPOnly: true,
 			})
 		}
+	} else {
+		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	}
 
 	if !isValidURL(string(originalURL)) {
@@ -65,6 +67,8 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 				HTTPOnly: true,
 			})
 		}
+	} else {
+		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	}
 	originalURL, err := s.Storage.GetURL(id, userID)
 	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
@@ -94,6 +98,8 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 				HTTPOnly: true,
 			})
 		}
+	} else {
+		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	}
 	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
@@ -142,6 +148,8 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 				HTTPOnly: true,
 			})
 		}
+	} else {
+		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	}
 
 	urls, err := s.Storage.GetUserURLs(userID)
@@ -184,6 +192,8 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 				HTTPOnly: true,
 			})
 		}
+	} else {
+		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	}
 	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
