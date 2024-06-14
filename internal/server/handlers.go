@@ -13,6 +13,20 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	originalURL := c.Body()
 	userID := c.Cookies("userID")
 
+	if userID == "" {
+		value := map[string]string{
+			"userID": "1",
+		}
+		encoded, err := s.CookieHandler.Encode("userID", value)
+		if err == nil {
+			c.Cookie(&fiber.Cookie{
+				Name:     "userID",
+				Value:    encoded,
+				HTTPOnly: true,
+			})
+		}
+	}
+
 	if !isValidURL(string(originalURL)) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
@@ -39,6 +53,19 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userID := c.Cookies("userID")
+	if userID == "" {
+		value := map[string]string{
+			"userID": "1",
+		}
+		encoded, err := s.CookieHandler.Encode("userID", value)
+		if err == nil {
+			c.Cookie(&fiber.Cookie{
+				Name:     "userID",
+				Value:    encoded,
+				HTTPOnly: true,
+			})
+		}
+	}
 	originalURL, err := s.Storage.GetURL(id, userID)
 	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	if err != nil {
@@ -55,6 +82,19 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req models.ShortenRequest
 	userID := c.Cookies("userID")
+	if userID == "" {
+		value := map[string]string{
+			"userID": "1",
+		}
+		encoded, err := s.CookieHandler.Encode("userID", value)
+		if err == nil {
+			c.Cookie(&fiber.Cookie{
+				Name:     "userID",
+				Value:    encoded,
+				HTTPOnly: true,
+			})
+		}
+	}
 	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
@@ -90,12 +130,18 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 }
 func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 	userID := c.Cookies("userID")
-
-	// Если куки не содержит ID пользователя, возвращаем HTTP-статус 401 Unauthorized
 	if userID == "" {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized: User ID not found in cookies",
-		})
+		value := map[string]string{
+			"userID": "1",
+		}
+		encoded, err := s.CookieHandler.Encode("userID", value)
+		if err == nil {
+			c.Cookie(&fiber.Cookie{
+				Name:     "userID",
+				Value:    encoded,
+				HTTPOnly: true,
+			})
+		}
 	}
 
 	urls, err := s.Storage.GetUserURLs(userID)
@@ -126,6 +172,19 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 	var req []models.BatchShortenRequest
 	userID := c.Cookies("userID")
+	if userID == "" {
+		value := map[string]string{
+			"userID": "1",
+		}
+		encoded, err := s.CookieHandler.Encode("userID", value)
+		if err == nil {
+			c.Cookie(&fiber.Cookie{
+				Name:     "userID",
+				Value:    encoded,
+				HTTPOnly: true,
+			})
+		}
+	}
 	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
