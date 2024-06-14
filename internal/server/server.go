@@ -6,6 +6,7 @@ import (
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -26,9 +27,10 @@ type Server struct {
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
+	CookieHandler  *securecookie.SecureCookie
 }
 
-func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
+func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecookie.SecureCookie) *Server {
 	var storage Storable
 
 	if cfg.DatabaseDSN != "" {
@@ -59,6 +61,7 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 		App:            log,
 		ShortURLPrefix: cfg.BaseURL + "/",
 		Logger:         logger,
+		CookieHandler:  cookieHandler,
 	}
 
 	server.setupRoutes()
@@ -74,6 +77,24 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 }
 
 func (s *Server) setupRoutes() {
+	s.App.Use(func(c *fiber.Ctx) error {
+		userID := c.Cookies("userID")
+		if userID == "" {
+			value := map[string]string{
+				"userID": "1",
+			}
+			encoded, err := s.CookieHandler.Encode("userID", value)
+			if err == nil {
+				c.Cookie(&fiber.Cookie{
+					Name:     "userID",
+					Value:    encoded,
+					HTTPOnly: true,
+				})
+			}
+		}
+		return c.Next()
+	})
+
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/ping", s.PingHandler)

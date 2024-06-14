@@ -99,7 +99,7 @@ func main() {
 			logger.Fatalf("Failed to initialize database: %v", err)
 		}
 
-		server := server.NewServer(cfg, pool)
+		server := server.NewServer(cfg, pool, s)
 		logger.Infof("Запуск сервера на адресе %s", cfg.Address)
 
 		if err := server.Run(); err != nil {
