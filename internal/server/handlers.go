@@ -91,9 +91,11 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 	userID := c.Cookies("userID")
 
-	// Если кука не содержит ID пользователя, возвращаем HTTP-статус 401 Unauthorized
+	// Если куки не содержит ID пользователя, возвращаем HTTP-статус 401 Unauthorized
 	if userID == "" {
-		return c.Status(http.StatusUnauthorized).SendString("Unauthorized: User ID not found in cookies")
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: User ID not found in cookies",
+		})
 	}
 
 	urls, err := s.Storage.GetUserURLs(userID)
@@ -105,7 +107,9 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 
 	// Если список URL пуст, возвращаем HTTP-статус 204 No Content
 	if len(urls) == 0 {
-		return c.Status(http.StatusNoContent).SendString("No Content: No URLs found for this user")
+		return c.Status(http.StatusNoContent).JSON(fiber.Map{
+			"message": "No Content: No URLs found for this user",
+		})
 	}
 
 	response := make([]models.RespPair, len(urls))
@@ -116,7 +120,6 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 		}
 	}
 
-	c.Set("Content-Type", "application/json") // Устанавливаем заголовок Content-Type в application/json
 	return c.Status(http.StatusOK).JSON(response)
 }
 
