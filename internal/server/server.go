@@ -93,11 +93,11 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 		return c.Status(http.StatusNoContent).SendString("No Content: No URLs found for this user")
 	}
 
-	response := make([]map[string]string, len(urls))
+	response := make([]models.RespPair, len(urls))
 	for i, url := range urls {
-		response[i] = map[string]string{
-			"short_url":    s.ShortURLPrefix + url.ShortURL,
-			"original_url": url.OriginalURL,
+		response[i] = models.RespPair{
+			ShortURL:    s.ShortURLPrefix + url.ShortURL,
+			OriginalURL: url.OriginalURL,
 		}
 	}
 
