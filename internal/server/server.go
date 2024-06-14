@@ -101,6 +101,7 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 		}
 	}
 
+	c.Set("Content-Type", "application/json") // Устанавливаем заголовок Content-Type в application/json
 	return c.Status(http.StatusOK).JSON(response)
 }
 
