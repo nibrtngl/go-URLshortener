@@ -77,24 +77,6 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 }
 
 func (s *Server) setupRoutes() {
-	s.App.Use(func(c *fiber.Ctx) error {
-		userID := c.Cookies("userID")
-		if userID == "" {
-			value := map[string]string{
-				"userID": "1",
-			}
-			encoded, err := s.CookieHandler.Encode("userID", value)
-			if err == nil {
-				c.Cookie(&fiber.Cookie{
-					Name:     "userID",
-					Value:    encoded,
-					HTTPOnly: true,
-				})
-			}
-		}
-		return c.Next()
-	})
-
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/ping", s.PingHandler)
