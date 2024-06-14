@@ -26,6 +26,18 @@ func generateShortID() string {
 	return string(b)
 }
 
+func generateUserID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	idLength := 10
+	b := make([]byte, idLength)
+
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(b)
+}
+
 func (s *Server) saveStorageToFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {

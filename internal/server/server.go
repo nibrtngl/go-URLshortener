@@ -76,6 +76,10 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 	return server
 }
 
+func (s *Server) Valid(userID string) bool {
+	return userID != ""
+}
+
 func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)

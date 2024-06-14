@@ -13,9 +13,10 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	originalURL := c.Body()
 	userID := c.Cookies("userID")
 
-	if userID == "" {
+	if userID == "" || !s.Valid(userID) {
+		userID = generateUserID()
 		value := map[string]string{
-			"userID": "1",
+			"userID": userID,
 		}
 		encoded, err := s.CookieHandler.Encode("userID", value)
 		if err == nil {
@@ -25,8 +26,6 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 				HTTPOnly: true,
 			})
 		}
-	} else {
-		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
 	}
 
 	if !isValidURL(string(originalURL)) {
@@ -136,20 +135,9 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 }
 func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 	userID := c.Cookies("userID")
-	if userID == "" {
-		value := map[string]string{
-			"userID": "1",
-		}
-		encoded, err := s.CookieHandler.Encode("userID", value)
-		if err == nil {
-			c.Cookie(&fiber.Cookie{
-				Name:     "userID",
-				Value:    encoded,
-				HTTPOnly: true,
-			})
-		}
-	} else {
-		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
+
+	if userID == "" || !s.Valid(userID) {
+		return c.Status(http.StatusUnauthorized).SendString("Unauthorized: Invalid user ID")
 	}
 
 	urls, err := s.Storage.GetUserURLs(userID)
@@ -159,11 +147,8 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Если список URL пуст, возвращаем HTTP-статус 204 No Content
 	if len(urls) == 0 {
-		return c.Status(http.StatusNoContent).JSON(fiber.Map{
-			"message": "No Content: No URLs found for this user",
-		})
+		return c.Status(http.StatusNoContent).SendString("No Content: No URLs found for this user")
 	}
 
 	response := make([]models.RespPair, len(urls))
