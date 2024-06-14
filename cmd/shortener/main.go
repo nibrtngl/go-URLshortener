@@ -30,9 +30,7 @@ func main() {
 
 		value := make(map[string]string)
 		err := s.Decode("userID", cookie, &value)
-		if err != nil || value["userID"] == "" {
-			// Если куки не существует или она не проходит проверку подлинности,
-			// создаем новую куку с уникальным идентификатором пользователя
+		if err != nil {
 			value = map[string]string{
 				"userID": "1",
 			}
