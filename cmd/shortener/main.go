@@ -21,8 +21,9 @@ func main() {
 	var (
 		hashKey  = []byte("very-secret")
 		blockKey = []byte("a-lot-secret")
-		s        = securecookie.New(hashKey, blockKey)
 	)
+	s := securecookie.New(hashKey, blockKey)
+
 	app := fiber.New()
 
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -46,6 +47,7 @@ func main() {
 
 		return c.SendStatus(http.StatusOK)
 	})
+
 	if err := env.Parse(&cfg); err != nil {
 		logrus.Errorf("Ошибка при парсинге переменных окружения: %v", err)
 	}
