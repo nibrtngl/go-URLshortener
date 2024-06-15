@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gorilla/securecookie"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
@@ -12,7 +13,9 @@ import (
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	originalURL := c.Body()
 	userID := c.Cookies("userID")
-
+	if s.CookieHandler == nil {
+		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
+	}
 	if userID == "" || !s.Valid(userID) {
 		userID = generateUserID()
 		value := map[string]string{
