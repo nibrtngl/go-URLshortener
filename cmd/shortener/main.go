@@ -27,18 +27,18 @@ func main() {
 	app := fiber.New()
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		cookie := c.Cookies(server.UserID)
+		cookie := c.Cookies("userID")
 
 		value := make(map[string]string)
-		err := s.Decode(server.UserID, cookie, &value)
+		err := s.Decode("userID", cookie, &value)
 		if err != nil {
 			value = map[string]string{
-				server.UserID: "1",
+				"userID": "1",
 			}
-			encoded, err := s.Encode(server.UserID, value)
+			encoded, err := s.Encode("userID", value)
 			if err == nil {
 				c.Cookie(&fiber.Cookie{
-					Name:     server.UserID,
+					Name:     "userID",
 					Value:    encoded,
 					HTTPOnly: true,
 				})
