@@ -4,6 +4,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type URL struct {
+	ShortURL    string
+	OriginalURL string
+}
+
+type RespPair struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
 type BatchShortenRequest struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`

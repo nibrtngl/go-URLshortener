@@ -26,6 +26,18 @@ func generateShortID() string {
 	return string(b)
 }
 
+func generateUserID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	idLength := 10
+	b := make([]byte, idLength)
+
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(b)
+}
+
 func (s *Server) saveStorageToFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -41,7 +53,7 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	}
 
 	for _, key := range keys {
-		url, err := s.Storage.GetURL(key)
+		url, err := s.Storage.GetURL(key, "")
 		if err != nil {
 			return err
 		}
@@ -89,7 +101,7 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 		shortURL := entry["short_url"]
 		originalURL := entry["original_url"]
 
-		s.Storage.SetURL(shortURL, originalURL)
+		s.Storage.SetURL(shortURL, originalURL, "")
 
 	}
 

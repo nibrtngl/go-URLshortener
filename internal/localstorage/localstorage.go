@@ -2,29 +2,36 @@ package localstorage
 
 import (
 	"errors"
+	"fiber-apis/internal/models"
 )
 
 type InternalStorage struct {
-	urls map[string]string
+	urls map[string]models.URL
 }
 
 func NewInternalStorage() *InternalStorage {
 	return &InternalStorage{
-		urls: make(map[string]string),
+		urls: make(map[string]models.URL),
 	}
 }
 
-func (s *InternalStorage) GetURL(shortURL string) (string, error) {
-	originalURL, ok := s.urls[shortURL]
+func (s *InternalStorage) GetURL(shortURL string, userID string) (string, error) {
+	url, ok := s.urls[shortURL]
 	if !ok {
 		return "", errors.New("url not found")
 	}
-	return originalURL, nil
+	return url.OriginalURL, nil
 }
 
-func (s *InternalStorage) SetURL(id, url string) error {
-	s.urls[id] = url
-	return nil
+func (s *InternalStorage) SetURL(id, url string, userID string) (string, error) {
+	if _, ok := s.urls[id]; ok {
+		return "", errors.New("url already exists")
+	}
+	s.urls[id] = models.URL{
+		ShortURL:    id,
+		OriginalURL: url,
+	}
+	return id, nil
 }
 
 func (s *InternalStorage) GetAllKeys() ([]string, error) {
@@ -33,6 +40,14 @@ func (s *InternalStorage) GetAllKeys() ([]string, error) {
 		keys = append(keys, k)
 	}
 	return keys, nil
+}
+
+func (s *InternalStorage) GetUserURLs(userID string) ([]models.URL, error) {
+	var urls []models.URL
+	for _, url := range s.urls {
+		urls = append(urls, url)
+	}
+	return urls, nil
 }
 
 func (s *InternalStorage) Ping() error {
