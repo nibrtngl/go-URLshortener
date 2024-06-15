@@ -10,21 +10,23 @@ import (
 	"net/url"
 )
 
+const UserID = "userID"
+
 func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	originalURL := c.Body()
-	userID := c.Cookies("userID")
+	userID := c.Cookies(UserID)
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	}
 	if userID == "" || !s.Valid(userID) {
 		userID = generateUserID()
 		value := map[string]string{
-			"userID": userID,
+			userID: userID,
 		}
-		encoded, err := s.CookieHandler.Encode("userID", value)
+		encoded, err := s.CookieHandler.Encode(userID, value)
 		if err == nil {
 			c.Cookie(&fiber.Cookie{
-				Name:     "userID",
+				Name:     userID,
 				Value:    encoded,
 				HTTPOnly: true,
 			})
@@ -38,7 +40,7 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	id := generateShortID()
 
 	dbid, err := s.Storage.SetURL(id, string(originalURL), userID)
-	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
+	c.Cookie(&fiber.Cookie{Name: userID, Value: userID})
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 	if err != nil {
 		logrus.Errorf("Failed to save url: %v", err)
@@ -56,27 +58,27 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
-	userID := c.Cookies("userID")
+	userID := c.Cookies(UserID)
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	}
 	if userID == "" {
 		value := map[string]string{
-			"userID": "1",
+			userID: "1",
 		}
-		encoded, err := s.CookieHandler.Encode("userID", value)
+		encoded, err := s.CookieHandler.Encode(userID, value)
 		if err == nil {
 			c.Cookie(&fiber.Cookie{
-				Name:     "userID",
+				Name:     userID,
 				Value:    encoded,
 				HTTPOnly: true,
 			})
 		}
 	} else {
-		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
+		c.Cookie(&fiber.Cookie{Name: userID, Value: userID})
 	}
 	originalURL, err := s.Storage.GetURL(id, userID)
-	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
+	c.Cookie(&fiber.Cookie{Name: userID, Value: userID})
 	if err != nil {
 		return c.Status(http.StatusNotFound).SendString("404, not found")
 	}
@@ -93,23 +95,23 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	}
-	userID := c.Cookies("userID")
+	userID := c.Cookies(UserID)
 	if userID == "" {
 		value := map[string]string{
-			"userID": "1",
+			userID: "1",
 		}
-		encoded, err := s.CookieHandler.Encode("userID", value)
+		encoded, err := s.CookieHandler.Encode(userID, value)
 		if err == nil {
 			c.Cookie(&fiber.Cookie{
-				Name:     "userID",
+				Name:     userID,
 				Value:    encoded,
 				HTTPOnly: true,
 			})
 		}
 	} else {
-		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
+		c.Cookie(&fiber.Cookie{Name: userID, Value: userID})
 	}
-	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
+	c.Cookie(&fiber.Cookie{Name: userID, Value: userID})
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
 			Error: "bad request: Invalid json format",
@@ -122,7 +124,7 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	}
 
 	id := generateShortID()
-	dbid, err := s.Storage.SetURL(id, req.URL, c.Cookies("userID"))
+	dbid, err := s.Storage.SetURL(id, req.URL, c.Cookies(userID))
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
 
@@ -143,7 +145,7 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(resp)
 }
 func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
-	userID := c.Cookies("userID")
+	userID := c.Cookies(UserID)
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	}
@@ -179,23 +181,23 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	}
 	var req []models.BatchShortenRequest
-	userID := c.Cookies("userID")
+	userID := c.Cookies(UserID)
 	if userID == "" {
 		value := map[string]string{
-			"userID": "1",
+			userID: "1",
 		}
-		encoded, err := s.CookieHandler.Encode("userID", value)
+		encoded, err := s.CookieHandler.Encode(userID, value)
 		if err == nil {
 			c.Cookie(&fiber.Cookie{
-				Name:     "userID",
+				Name:     userID,
 				Value:    encoded,
 				HTTPOnly: true,
 			})
 		}
 	} else {
-		c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
+		c.Cookie(&fiber.Cookie{Name: userID, Value: userID})
 	}
-	c.Cookie(&fiber.Cookie{Name: "userID", Value: userID})
+	c.Cookie(&fiber.Cookie{Name: userID, Value: userID})
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
 			Error: "bad request: Invalid json format",
@@ -210,7 +212,7 @@ func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 		}
 
 		id := generateShortID()
-		s.Storage.SetURL(id, item.OriginalURL, c.Cookies("userID"))
+		s.Storage.SetURL(id, item.OriginalURL, c.Cookies(userID))
 
 		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
 		resp = append(resp, models.BatchShortenResponse{
