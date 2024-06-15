@@ -57,6 +57,9 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userID := c.Cookies("userID")
+	if s.CookieHandler == nil {
+		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
+	}
 	if userID == "" {
 		value := map[string]string{
 			"userID": "1",
@@ -87,6 +90,9 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 
 func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	var req models.ShortenRequest
+	if s.CookieHandler == nil {
+		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
+	}
 	userID := c.Cookies("userID")
 	if userID == "" {
 		value := map[string]string{
@@ -138,6 +144,9 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 }
 func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 	userID := c.Cookies("userID")
+	if s.CookieHandler == nil {
+		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
+	}
 
 	if userID == "" || !s.Valid(userID) {
 		return c.Status(http.StatusUnauthorized).SendString("Unauthorized: Invalid user ID")
@@ -166,6 +175,9 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 }
 
 func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
+	if s.CookieHandler == nil {
+		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
+	}
 	var req []models.BatchShortenRequest
 	userID := c.Cookies("userID")
 	if userID == "" {
