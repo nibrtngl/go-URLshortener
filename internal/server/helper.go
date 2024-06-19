@@ -104,7 +104,7 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 			OriginalURL: entry["original_url"],
 		}
 
-		_, err = s.Storage.SetURL(entry["uuid"], url.OriginalURL, "")
+		_, err = s.Storage.SetURL(url.ShortURL, url.OriginalURL, "")
 		if err != nil {
 			return err
 		}
