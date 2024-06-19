@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fiber-apis/internal/db"
 	"fiber-apis/internal/localstorage"
 	"fiber-apis/internal/models"
@@ -9,12 +10,14 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"os"
 )
 
 type Storable interface {
-	GetURL(shortURL string, userID string) (string, error)
+	GetURL(shortURL string, userID string) (models.URL, error)
 	SetURL(id, url string, userID string) (string, error)
+	SetURLsAsDeleted(ids []string, userID string) error
 	GetAllKeys() ([]string, error)
 	GetUserURLs(userID string) ([]models.URL, error)
 	Ping() error
@@ -76,6 +79,23 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 	return server
 }
 
+func (s *Server) deleteURLsHandler(c *fiber.Ctx) error {
+	var ids []string
+	if err := json.Unmarshal(c.Body(), &ids); err != nil {
+		errResponse := models.ErrorResponse{
+			Error: "bad request: Invalid json format",
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
+	}
+
+	userID := c.Cookies(UserID)
+	if err := s.Storage.SetURLsAsDeleted(ids, userID); err != nil {
+		return c.Status(http.StatusInternalServerError).SendString(err.Error())
+	}
+
+	return c.Status(http.StatusAccepted).SendString("Accepted")
+}
+
 func (s *Server) Valid(userID string) bool {
 	return userID != ""
 }
@@ -87,6 +107,7 @@ func (s *Server) setupRoutes() {
 	s.App.Get("/:id", s.redirectToOriginalURL)
 	s.App.Post("/api/shorten/batch", s.shortenBatchURLHandler)
 	s.App.Get("/api/user/urls", s.getUserURLsHandler)
+	s.App.Delete("/api/user/urls", s.deleteURLsHandler)
 }
 
 func (s *Server) Run() error {

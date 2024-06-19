@@ -3,6 +3,7 @@ package localstorage
 import (
 	"errors"
 	"fiber-apis/internal/models"
+	"fmt"
 )
 
 type InternalStorage struct {
@@ -15,12 +16,12 @@ func NewInternalStorage() *InternalStorage {
 	}
 }
 
-func (s *InternalStorage) GetURL(shortURL string, userID string) (string, error) {
+func (s *InternalStorage) GetURL(shortURL string, userID string) (models.URL, error) {
 	url, ok := s.urls[shortURL]
 	if !ok {
-		return "", errors.New("url not found")
+		return models.URL{}, errors.New("url not found")
 	}
-	return url.OriginalURL, nil
+	return url, nil
 }
 
 func (s *InternalStorage) SetURL(id, url string, userID string) (string, error) {
@@ -32,6 +33,18 @@ func (s *InternalStorage) SetURL(id, url string, userID string) (string, error) 
 		OriginalURL: url,
 	}
 	return id, nil
+}
+
+func (s *InternalStorage) SetURLsAsDeleted(ids []string, userID string) error {
+	for _, id := range ids {
+		url, ok := s.urls[id]
+		if !ok {
+			return fmt.Errorf("url not found: %s", id)
+		}
+		url.IsDeleted = true
+		s.urls[id] = url
+	}
+	return nil
 }
 
 func (s *InternalStorage) GetAllKeys() ([]string, error) {
