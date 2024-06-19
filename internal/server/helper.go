@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"encoding/json"
+	"fiber-apis/internal/models"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/url"
@@ -60,8 +61,8 @@ func (s *Server) saveStorageToFile(filePath string) error {
 
 		entry := map[string]string{
 			"uuid":         key,
-			"short_url":    url,
-			"original_url": url,
+			"short_url":    url.ShortURL,
+			"original_url": url.OriginalURL,
 		}
 
 		entryJSON, err := json.Marshal(entry)
@@ -93,16 +94,20 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		var entry map[string]string
-		err := json.Unmarshal(scanner.Bytes(), &entry)
+		err := json.Unmarshal([]byte(scanner.Text()), &entry)
 		if err != nil {
 			return err
 		}
 
-		shortURL := entry["short_url"]
-		originalURL := entry["original_url"]
+		url := models.URL{
+			ShortURL:    entry["short_url"],
+			OriginalURL: entry["original_url"],
+		}
 
-		s.Storage.SetURL(shortURL, originalURL, "")
-
+		_, err = s.Storage.SetURL(entry["uuid"], url.OriginalURL, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := scanner.Err(); err != nil {

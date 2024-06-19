@@ -7,6 +7,7 @@ import (
 type URL struct {
 	ShortURL    string
 	OriginalURL string
+	IsDeleted   bool
 }
 
 type RespPair struct {

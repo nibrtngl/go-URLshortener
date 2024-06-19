@@ -59,6 +59,13 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userID := c.Cookies(UserID)
+	urlData, err := s.Storage.GetURL(id, userID)
+	if err != nil {
+		return c.Status(http.StatusNotFound).SendString("404, not found")
+	}
+	if urlData.IsDeleted {
+		return c.Status(http.StatusGone).SendString("410, gone")
+	}
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	}
@@ -77,11 +84,7 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	} else {
 		c.Cookie(&fiber.Cookie{Name: UserID, Value: userID})
 	}
-	originalURL, err := s.Storage.GetURL(id, userID)
-	c.Cookie(&fiber.Cookie{Name: UserID, Value: userID})
-	if err != nil {
-		return c.Status(http.StatusNotFound).SendString("404, not found")
-	}
+	originalURL := urlData.OriginalURL // Access the OriginalURL field of the models.URL struct
 	if !isValidURL(originalURL) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	} else {
