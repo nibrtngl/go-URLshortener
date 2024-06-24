@@ -180,6 +180,23 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(response)
 }
 
+func (s *Server) deleteURLsHandler(c *fiber.Ctx) error {
+	var ids []string
+	if err := json.Unmarshal(c.Body(), &ids); err != nil {
+		errResponse := models.ErrorResponse{
+			Error: "bad request: Invalid json format",
+		}
+		return c.Status(http.StatusBadRequest).JSON(errResponse)
+	}
+
+	userID := c.Cookies(UserID)
+	if err := s.Storage.SetURLsAsDeleted(ids, userID); err != nil {
+		return c.Status(http.StatusInternalServerError).SendString(err.Error())
+	}
+
+	return c.Status(http.StatusAccepted).SendString("Accepted")
+}
+
 func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))

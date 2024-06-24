@@ -208,3 +208,68 @@ func TestShortenAPIHandler(t *testing.T) {
 		}
 	}
 }
+
+func TestGetUserURLsHandler(t *testing.T) {
+
+	server := NewServer(models.Config{}, nil, nil)
+	server.Storage = localstorage.NewInternalStorage()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+	req.Header.Set("Cookie", "userID=userID")
+
+	resp, err := server.App.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestDeleteURLsHandler(t *testing.T) {
+
+	server := NewServer(models.Config{}, nil, nil)
+	server.Storage = localstorage.NewInternalStorage()
+
+	b := bytes.NewBuffer([]byte(`["url1", "url2"]`))
+	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", b)
+	req.Header.Set("Cookie", "userID=userID")
+
+	resp, err := server.App.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+}
+
+func TestShortenBatchURLHandler(t *testing.T) {
+
+	server := NewServer(models.Config{}, nil, nil)
+	server.Storage = localstorage.NewInternalStorage()
+
+	b := bytes.NewBuffer([]byte(`[{"correlation_id": "1", "original_url": "https://example.com"}]`))
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", b)
+	req.Header.Set("Cookie", "userID=userID")
+
+	resp, err := server.App.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+}
+
+func TestPingHandler(t *testing.T) {
+
+	server := NewServer(models.Config{}, nil, nil)
+	server.Storage = localstorage.NewInternalStorage()
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+
+	resp, err := server.App.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}

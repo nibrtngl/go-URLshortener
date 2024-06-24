@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"time"
 )
@@ -25,6 +26,16 @@ func main() {
 	s := securecookie.New(hashKey, blockKey)
 
 	app := fiber.New()
+
+	go func() {
+		pprofMux := http.NewServeMux()
+		pprofMux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+		pprofMux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+		pprofMux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+		pprofMux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+		pprofMux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+		http.ListenAndServe("localhost:6060", pprofMux)
+	}()
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		cookie := c.Cookies(server.UserID)
@@ -81,7 +92,7 @@ func main() {
 	if *baseURL == "" {
 		*baseURL = "http://localhost:8080"
 	}
-	//dbDSN = "host=localhost port=5432 dbname=postgres user=postgres password=postgres connect_timeout=10 sslmode=prefer"
+	dbDSN = "host=localhost port=5432 dbname=postgres user=postgres password=postgres connect_timeout=10 sslmode=prefer"
 	cfg.Address = *address
 	cfg.BaseURL = *baseURL
 	cfg.FileStoragePath = *fileStoragePath
