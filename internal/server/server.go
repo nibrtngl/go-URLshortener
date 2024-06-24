@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fiber-apis/internal/db"
 	"fiber-apis/internal/localstorage"
 	"fiber-apis/internal/models"
@@ -10,7 +9,6 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
-	"net/http"
 	"os"
 )
 
@@ -79,25 +77,29 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 	return server
 }
 
-func (s *Server) deleteURLsHandler(c *fiber.Ctx) error {
-	var ids []string
-	if err := json.Unmarshal(c.Body(), &ids); err != nil {
-		errResponse := models.ErrorResponse{
-			Error: "bad request: Invalid json format",
-		}
-		return c.Status(http.StatusBadRequest).JSON(errResponse)
-	}
-
-	userID := c.Cookies(UserID)
-	if err := s.Storage.SetURLsAsDeleted(ids, userID); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString(err.Error())
-	}
-
-	return c.Status(http.StatusAccepted).SendString("Accepted")
-}
-
 func (s *Server) Valid(userID string) bool {
 	return userID != ""
+}
+
+func setupServerForTesting() *Server {
+	cfg := models.Config{
+		Address: "localhost:8080",
+		BaseURL: "http://localhost:8080",
+	}
+
+	storage := localstorage.NewInternalStorage()
+
+	server := &Server{
+		Storage:        storage,
+		Cfg:            cfg,
+		App:            fiber.New(),
+		ShortURLPrefix: cfg.BaseURL + "/",
+		Logger:         logrus.New(),
+	}
+
+	server.setupRoutes()
+
+	return server
 }
 
 func (s *Server) setupRoutes() {
