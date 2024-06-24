@@ -222,7 +222,7 @@ func TestGetUserURLsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -239,9 +239,8 @@ func TestDeleteURLsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
-	resp.Body.Close()
 }
 
 func TestShortenBatchURLHandler(t *testing.T) {
@@ -257,9 +256,9 @@ func TestShortenBatchURLHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
-	resp.Body.Close()
+
 }
 
 func TestPingHandler(t *testing.T) {
@@ -273,7 +272,8 @@ func TestPingHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
+
 }
