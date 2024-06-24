@@ -17,7 +17,8 @@ func BenchmarkShortenURLHandler(b *testing.B) {
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(requestBody))
 		b.StartTimer()
 
-		_, _ = server.App.Test(req, -1)
+		resp, _ := server.App.Test(req, -1)
+		defer resp.Body.Close()
 	}
 }
 
@@ -30,7 +31,8 @@ func BenchmarkRedirectToOriginalURL(b *testing.B) {
 		req := httptest.NewRequest(http.MethodGet, "/1", nil)
 		b.StartTimer()
 
-		_, _ = server.App.Test(req, -1)
+		resp, _ := server.App.Test(req, -1)
+		defer resp.Body.Close()
 	}
 }
 
@@ -44,7 +46,8 @@ func BenchmarkShortenAPIHandler(b *testing.B) {
 		req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBufferString(requestBody))
 		b.StartTimer()
 
-		_, _ = server.App.Test(req, -1)
+		resp, _ := server.App.Test(req, -1)
+		defer resp.Body.Close()
 	}
 }
 
@@ -57,7 +60,8 @@ func BenchmarkGetUserURLsHandler(b *testing.B) {
 		req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
 		b.StartTimer()
 
-		_, _ = server.App.Test(req, -1)
+		resp, _ := server.App.Test(req, -1)
+		defer resp.Body.Close()
 	}
 }
 
@@ -71,7 +75,8 @@ func BenchmarkDeleteURLsHandler(b *testing.B) {
 		req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewBufferString(requestBody))
 		b.StartTimer()
 
-		_, _ = server.App.Test(req, -1)
+		resp, _ := server.App.Test(req, -1)
+		defer resp.Body.Close()
 	}
 }
 
@@ -85,7 +90,8 @@ func BenchmarkShortenBatchURLHandler(b *testing.B) {
 		req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBufferString(requestBody))
 		b.StartTimer()
 
-		_, _ = server.App.Test(req, -1)
+		resp, _ := server.App.Test(req, -1)
+		defer resp.Body.Close()
 	}
 }
 
@@ -98,6 +104,7 @@ func BenchmarkPingHandler(b *testing.B) {
 		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 		b.StartTimer()
 
-		_, _ = server.App.Test(req, -1)
+		resp, _ := server.App.Test(req, -1)
+		defer resp.Body.Close()
 	}
 }
