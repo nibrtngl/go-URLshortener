@@ -205,7 +205,6 @@ func TestShortenAPIHandler(t *testing.T) {
 
 			expectedURL, _ := url.JoinPath(shortURL)
 			assert.Equalf(t, expectedURL, shortURL, "Expected shortened URL does not match")
-
 		}
 	}
 }
@@ -222,7 +221,7 @@ func TestGetUserURLsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-	defer resp.Body.Close()
+
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -239,7 +238,7 @@ func TestDeleteURLsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-	defer resp.Body.Close()
+
 	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
 }
 
@@ -256,9 +255,8 @@ func TestShortenBatchURLHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-	defer resp.Body.Close()
-	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 }
 
 func TestPingHandler(t *testing.T) {
@@ -272,8 +270,6 @@ func TestPingHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
 }
