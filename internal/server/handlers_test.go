@@ -205,6 +205,7 @@ func TestShortenAPIHandler(t *testing.T) {
 
 			expectedURL, _ := url.JoinPath(shortURL)
 			assert.Equalf(t, expectedURL, shortURL, "Expected shortened URL does not match")
+
 		}
 	}
 }
@@ -240,6 +241,7 @@ func TestDeleteURLsHandler(t *testing.T) {
 	}
 
 	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+	resp.Body.Close()
 }
 
 func TestShortenBatchURLHandler(t *testing.T) {
@@ -257,6 +259,7 @@ func TestShortenBatchURLHandler(t *testing.T) {
 	}
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	resp.Body.Close()
 }
 
 func TestPingHandler(t *testing.T) {
@@ -272,4 +275,5 @@ func TestPingHandler(t *testing.T) {
 	}
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	resp.Body.Close()
 }
