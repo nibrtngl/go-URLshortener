@@ -1,23 +1,23 @@
 package server
 
 import (
-	"encoding/json"
 	"fiber-apis/internal/db"
 	"fiber-apis/internal/localstorage"
 	"fiber-apis/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"net/url"
 	"os"
 )
 
 type Storable interface {
-	GetURL(id string) (string, error)
-	SetURL(id, url string) error
+	GetURL(shortURL string, userID string) (models.URL, error)
+	SetURL(id, url string, userID string) (string, error)
+	SetURLsAsDeleted(ids []string, userID string) error
 	GetAllKeys() ([]string, error)
+	GetUserURLs(userID string) ([]models.URL, error)
 	Ping() error
 }
 
@@ -28,37 +28,10 @@ type Server struct {
 	ShortURLPrefix string
 	Result         string `json:"URL"`
 	Logger         *logrus.Logger
+	CookieHandler  *securecookie.SecureCookie
 }
 
-func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
-	var req []models.BatchShortenRequest
-	if err := json.Unmarshal(c.Body(), &req); err != nil {
-		errResponse := models.ErrorResponse{
-			Error: "bad request: Invalid json format",
-		}
-		return c.Status(http.StatusBadRequest).JSON(errResponse)
-	}
-
-	var resp []models.BatchShortenResponse
-	for _, item := range req {
-		if !isValidURL(item.OriginalURL) {
-			return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
-		}
-
-		id := generateShortID()
-		s.Storage.SetURL(id, item.OriginalURL)
-
-		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)
-		resp = append(resp, models.BatchShortenResponse{
-			CorrelationID: item.CorrelationID,
-			ShortURL:      shortURL,
-		})
-	}
-
-	return c.Status(http.StatusCreated).JSON(resp)
-}
-
-func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
+func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecookie.SecureCookie) *Server {
 	var storage Storable
 
 	if cfg.DatabaseDSN != "" {
@@ -89,6 +62,7 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 		App:            log,
 		ShortURLPrefix: cfg.BaseURL + "/",
 		Logger:         logger,
+		CookieHandler:  cookieHandler,
 	}
 
 	server.setupRoutes()
@@ -103,12 +77,39 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool) *Server {
 	return server
 }
 
+func (s *Server) Valid(userID string) bool {
+	return userID != ""
+}
+
+func setupServerForTesting() *Server {
+	cfg := models.Config{
+		Address: "localhost:8080",
+		BaseURL: "http://localhost:8080",
+	}
+
+	storage := localstorage.NewInternalStorage()
+
+	server := &Server{
+		Storage:        storage,
+		Cfg:            cfg,
+		App:            fiber.New(),
+		ShortURLPrefix: cfg.BaseURL + "/",
+		Logger:         logrus.New(),
+	}
+
+	server.setupRoutes()
+
+	return server
+}
+
 func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.shortenAPIHandler)
 	s.App.Post("/", s.shortenURLHandler)
 	s.App.Get("/ping", s.PingHandler)
 	s.App.Get("/:id", s.redirectToOriginalURL)
 	s.App.Post("/api/shorten/batch", s.shortenBatchURLHandler)
+	s.App.Get("/api/user/urls", s.getUserURLsHandler)
+	s.App.Delete("/api/user/urls", s.deleteURLsHandler)
 }
 
 func (s *Server) Run() error {
