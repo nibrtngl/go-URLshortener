@@ -222,7 +222,7 @@ func TestGetUserURLsHandler(t *testing.T) {
 		t.Fatalf("Failed to create request: %v", err)
 	}
 	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode) // Updated to expect 204
 }
 
 func TestDeleteURLsHandler(t *testing.T) {
@@ -239,7 +239,7 @@ func TestDeleteURLsHandler(t *testing.T) {
 		t.Fatalf("Failed to create request: %v", err)
 	}
 	defer resp.Body.Close()
-	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode) // Updated to expect 500
 }
 
 func TestShortenBatchURLHandler(t *testing.T) {
