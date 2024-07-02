@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"encoding/json"
+	"fiber-apis/internal/models"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/url"
@@ -17,6 +18,18 @@ func isValidURL(url1 string) bool {
 func generateShortID() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY0123456789"
 	idLength := 8
+	b := make([]byte, idLength)
+
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(b)
+}
+
+func generateUserID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	idLength := 10
 	b := make([]byte, idLength)
 
 	for i := range b {
@@ -41,15 +54,15 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	}
 
 	for _, key := range keys {
-		url, err := s.Storage.GetURL(key)
+		url, err := s.Storage.GetURL(key, "")
 		if err != nil {
 			return err
 		}
 
 		entry := map[string]string{
 			"uuid":         key,
-			"short_url":    url,
-			"original_url": url,
+			"short_url":    url.ShortURL,
+			"original_url": url.OriginalURL,
 		}
 
 		entryJSON, err := json.Marshal(entry)
@@ -81,16 +94,20 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		var entry map[string]string
-		err := json.Unmarshal(scanner.Bytes(), &entry)
+		err := json.Unmarshal([]byte(scanner.Text()), &entry)
 		if err != nil {
 			return err
 		}
 
-		shortURL := entry["short_url"]
-		originalURL := entry["original_url"]
+		url := models.URL{
+			ShortURL:    entry["short_url"],
+			OriginalURL: entry["original_url"],
+		}
 
-		s.Storage.SetURL(shortURL, originalURL)
-
+		_, err = s.Storage.SetURL(url.ShortURL, url.OriginalURL, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
