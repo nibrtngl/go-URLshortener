@@ -11,6 +11,7 @@ type InternalStorage struct {
 }
 
 func NewInternalStorage() *InternalStorage {
+
 	return &InternalStorage{
 		urls: make(map[string]models.URL),
 	}
