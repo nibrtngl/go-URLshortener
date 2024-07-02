@@ -43,6 +43,7 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 }
 
 func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
+
 	var req models.ShortenRequest
 	if err := json.Unmarshal(c.Body(), &req); err != nil {
 		errResponse := models.ErrorResponse{
