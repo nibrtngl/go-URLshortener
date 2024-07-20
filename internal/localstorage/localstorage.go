@@ -6,10 +6,12 @@ import (
 	"fmt"
 )
 
+// InternalStorage представляет собой структуру, которая представляет простое внутреннее хранилище для URL-адресов.
 type InternalStorage struct {
 	urls map[string]models.URL
 }
 
+// NewInternalStorage создает новый экземпляр InternalStorage.
 func NewInternalStorage() *InternalStorage {
 
 	return &InternalStorage{
@@ -17,6 +19,7 @@ func NewInternalStorage() *InternalStorage {
 	}
 }
 
+// GetURL извлекает URL из хранилища на основе предоставленного shortURL и userID.
 func (s *InternalStorage) GetURL(shortURL string, userID string) (models.URL, error) {
 	url, ok := s.urls[shortURL]
 	if !ok {
@@ -25,6 +28,7 @@ func (s *InternalStorage) GetURL(shortURL string, userID string) (models.URL, er
 	return url, nil
 }
 
+// SetURL добавляет новый URL в хранилище и возвращает сгенерированный ID.
 func (s *InternalStorage) SetURL(id, url string, userID string) (string, error) {
 	if _, ok := s.urls[id]; ok {
 		return "", errors.New("url already exists")
@@ -36,6 +40,7 @@ func (s *InternalStorage) SetURL(id, url string, userID string) (string, error) 
 	return id, nil
 }
 
+// SetURLsAsDeleted помечает предоставленные URL-адреса как удаленные в хранилище.
 func (s *InternalStorage) SetURLsAsDeleted(ids []string, userID string) error {
 	for _, id := range ids {
 		url, ok := s.urls[id]
@@ -48,6 +53,7 @@ func (s *InternalStorage) SetURLsAsDeleted(ids []string, userID string) error {
 	return nil
 }
 
+// GetAllKeys извлекает все ключи из хранилища.
 func (s *InternalStorage) GetAllKeys() ([]string, error) {
 	keys := make([]string, 0, len(s.urls))
 	for k := range s.urls {
@@ -56,6 +62,7 @@ func (s *InternalStorage) GetAllKeys() ([]string, error) {
 	return keys, nil
 }
 
+// GetUserURLs извлекает все URL-адреса, связанные с предоставленным userID, из хранилища.
 func (s *InternalStorage) GetUserURLs(userID string) ([]models.URL, error) {
 	var urls []models.URL
 	for _, url := range s.urls {
@@ -64,6 +71,7 @@ func (s *InternalStorage) GetUserURLs(userID string) ([]models.URL, error) {
 	return urls, nil
 }
 
+// Ping проверяет состояние хранилища.
 func (s *InternalStorage) Ping() error {
 	return nil
 }
