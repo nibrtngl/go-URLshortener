@@ -12,6 +12,7 @@ import (
 	"os"
 )
 
+// Storable представляет интерфейс для хранилища URL.
 type Storable interface {
 	GetURL(shortURL string, userID string) (models.URL, error)
 	SetURL(id, url string, userID string) (string, error)
@@ -21,6 +22,7 @@ type Storable interface {
 	Ping() error
 }
 
+// Server представляет структуру сервера.
 type Server struct {
 	Storage        Storable
 	Cfg            models.Config
@@ -31,6 +33,7 @@ type Server struct {
 	CookieHandler  *securecookie.SecureCookie
 }
 
+// NewServer создает новый экземпляр сервера.
 func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecookie.SecureCookie) *Server {
 	var storage Storable
 
@@ -77,10 +80,12 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 	return server
 }
 
+// Valid проверяет, является ли пользователь действительным.
 func (s *Server) Valid(userID string) bool {
 	return userID != ""
 }
 
+// setupServerForTesting тестирует сервер.
 func setupServerForTesting() *Server {
 	cfg := models.Config{
 		Address: "localhost:8080",
@@ -102,6 +107,7 @@ func setupServerForTesting() *Server {
 	return server
 }
 
+// setupRoutes настраивает маршруты.
 func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten", s.ShortenAPIHandler)
 	s.App.Post("/", s.ShortenURLHandler)
@@ -112,6 +118,7 @@ func (s *Server) setupRoutes() {
 	s.App.Delete("/api/user/urls", s.DeleteURLsHandler)
 }
 
+// Run запускает сервер.
 func (s *Server) Run() error {
 	s.setupRoutes()
 

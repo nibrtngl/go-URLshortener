@@ -10,11 +10,13 @@ import (
 	"os"
 )
 
+// IsValidURL проверяет, является ли URL допустимым.
 func isValidURL(url1 string) bool {
 	_, err := url.ParseRequestURI(url1)
 	return err == nil
 }
 
+// generateShortID генерирует короткий идентификатор.
 func generateShortID() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY0123456789"
 	idLength := 8
@@ -27,6 +29,7 @@ func generateShortID() string {
 	return string(b)
 }
 
+// generateUserID генерирует идентификатор пользователя.
 func generateUserID() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	idLength := 10
@@ -39,6 +42,7 @@ func generateUserID() string {
 	return string(b)
 }
 
+// saveStorageToFile сохраняет хранилище в файл.
 func (s *Server) saveStorageToFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -84,6 +88,7 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	return nil
 }
 
+// loadStorageFromFile загружает хранилище из файла.
 func (s *Server) loadStorageFromFile(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -117,10 +122,12 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	return nil
 }
 
+// fiberLogger логер от fiber
 type fiberLogger struct {
 	logger *logrus.Logger
 }
 
+// Write записывает данные в лог.
 func (f *fiberLogger) Write(p []byte) (n int, err error) {
 	f.logger.Info(string(p))
 	return len(p), nil

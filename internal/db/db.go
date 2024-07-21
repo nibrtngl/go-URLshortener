@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+// InitDB инициализирует базу данных, создавая необходимые таблицы.
 func InitDB(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(), `
         CREATE TABLE IF NOT EXISTS urls (
@@ -24,16 +25,19 @@ func InitDB(pool *pgxpool.Pool) error {
 	return err
 }
 
+// DatabaseStorage представляет собой структуру, которая представляет хранилище базы данных.
 type DatabaseStorage struct {
 	pool *pgxpool.Pool
 }
 
+// NewDatabaseStorage создает новый экземпляр DatabaseStorage.
 func NewDatabaseStorage(pool *pgxpool.Pool) *DatabaseStorage {
 	return &DatabaseStorage{
 		pool: pool,
 	}
 }
 
+// GetURL извлекает URL из базы данных на основе предоставленного shortURL и userID.
 func (s *DatabaseStorage) GetURL(shortURL string, userID string) (models.URL, error) {
 	query := "SELECT original_url, is_deleted FROM urls WHERE short_url = $1 AND user_id = $2"
 	row := s.pool.QueryRow(context.Background(), query, shortURL, userID)
@@ -50,6 +54,8 @@ func (s *DatabaseStorage) GetURL(shortURL string, userID string) (models.URL, er
 
 	return models.URL{ShortURL: shortURL, OriginalURL: originalURL, IsDeleted: isDeleted}, nil
 }
+
+// SetURL добавляет новый URL в базу данных и возвращает сгенерированный ID.
 
 func (s *DatabaseStorage) SetURL(id, url string, userID string) (string, error) {
 	query := `
@@ -72,6 +78,7 @@ func (s *DatabaseStorage) SetURL(id, url string, userID string) (string, error) 
 	return shortURL, nil
 }
 
+// SetURLsAsDeleted помечает предоставленные URL-адреса как удаленные в базе данных.
 func (s *DatabaseStorage) SetURLsAsDeleted(ids []string, userID string) error {
 	query := `
         UPDATE urls
@@ -85,10 +92,12 @@ func (s *DatabaseStorage) SetURLsAsDeleted(ids []string, userID string) error {
 	return nil
 }
 
+// GetAllKeys извлекает все ключи из базы данных.
 func (s *DatabaseStorage) GetAllKeys() ([]string, error) {
 	return nil, nil
 }
 
+// GetUserURLs извлекает все URL-адреса, связанные с предоставленным userID, из базы данных.
 func (s *DatabaseStorage) GetUserURLs(userID string) ([]models.URL, error) {
 	query := "SELECT short_url, original_url FROM urls WHERE user_id = $1"
 	rows, err := s.pool.Query(context.Background(), query, userID)
@@ -109,6 +118,7 @@ func (s *DatabaseStorage) GetUserURLs(userID string) ([]models.URL, error) {
 	return urls, nil
 }
 
+// Ping проверяет состояние базы данных.
 func (s *DatabaseStorage) Ping() error {
 	return s.pool.Ping(context.Background())
 }

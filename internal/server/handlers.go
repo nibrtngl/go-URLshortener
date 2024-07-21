@@ -203,6 +203,7 @@ func (s *Server) DeleteURLsHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusAccepted).SendString("Accepted")
 }
 
+// ShortenBatchURLHandler обработчик запросов на сокращение URL.
 func (s *Server) ShortenBatchURLHandler(c *fiber.Ctx) error {
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
@@ -251,6 +252,7 @@ func (s *Server) ShortenBatchURLHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(resp)
 }
 
+// PingHandler проверяет подключение к базе данных.
 func (s *Server) PingHandler(c *fiber.Ctx) error {
 	err := s.Storage.Ping()
 	if err != nil {
