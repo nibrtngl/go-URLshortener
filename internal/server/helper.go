@@ -3,17 +3,20 @@ package server
 import (
 	"bufio"
 	"encoding/json"
+	"fiber-apis/internal/models"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/url"
 	"os"
 )
 
+// IsValidURL проверяет, является ли URL допустимым.
 func isValidURL(url1 string) bool {
 	_, err := url.ParseRequestURI(url1)
 	return err == nil
 }
 
+// generateShortID генерирует короткий идентификатор.
 func generateShortID() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY0123456789"
 	idLength := 8
@@ -26,6 +29,20 @@ func generateShortID() string {
 	return string(b)
 }
 
+// generateUserID генерирует идентификатор пользователя.
+func generateUserID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	idLength := 10
+	b := make([]byte, idLength)
+
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(b)
+}
+
+// saveStorageToFile сохраняет хранилище в файл.
 func (s *Server) saveStorageToFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -41,15 +58,15 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	}
 
 	for _, key := range keys {
-		url, err := s.Storage.GetURL(key)
+		url, err := s.Storage.GetURL(key, "")
 		if err != nil {
 			return err
 		}
 
 		entry := map[string]string{
 			"uuid":         key,
-			"short_url":    url,
-			"original_url": url,
+			"short_url":    url.ShortURL,
+			"original_url": url.OriginalURL,
 		}
 
 		entryJSON, err := json.Marshal(entry)
@@ -71,6 +88,7 @@ func (s *Server) saveStorageToFile(filePath string) error {
 	return nil
 }
 
+// loadStorageFromFile загружает хранилище из файла.
 func (s *Server) loadStorageFromFile(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -81,16 +99,20 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		var entry map[string]string
-		err := json.Unmarshal(scanner.Bytes(), &entry)
+		err := json.Unmarshal([]byte(scanner.Text()), &entry)
 		if err != nil {
 			return err
 		}
 
-		shortURL := entry["short_url"]
-		originalURL := entry["original_url"]
+		url := models.URL{
+			ShortURL:    entry["short_url"],
+			OriginalURL: entry["original_url"],
+		}
 
-		s.Storage.SetURL(shortURL, originalURL)
-
+		_, err = s.Storage.SetURL(url.ShortURL, url.OriginalURL, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -100,10 +122,12 @@ func (s *Server) loadStorageFromFile(filePath string) error {
 	return nil
 }
 
+// fiberLogger логер от fiber
 type fiberLogger struct {
 	logger *logrus.Logger
 }
 
+// Write записывает данные в лог.
 func (f *fiberLogger) Write(p []byte) (n int, err error) {
 	f.logger.Info(string(p))
 	return len(p), nil

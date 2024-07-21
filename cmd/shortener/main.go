@@ -7,19 +7,61 @@ import (
 	"fiber-apis/internal/server"
 	"flag"
 	"github.com/caarlos0/env/v10"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"net/http/pprof"
 	"os"
 	"time"
 )
 
 func main() {
 	var cfg models.Config
+	var (
+		hashKey  = []byte("very-secret")
+		blockKey = []byte("a-lot-secret")
+	)
+	s := securecookie.New(hashKey, blockKey)
+
+	app := fiber.New()
+
+	go func() {
+		pprofMux := http.NewServeMux()
+		pprofMux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+		pprofMux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+		pprofMux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+		pprofMux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+		pprofMux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+		http.ListenAndServe("localhost:6060", pprofMux)
+	}()
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		cookie := c.Cookies(server.UserID)
+
+		value := make(map[string]string)
+		err := s.Decode(server.UserID, cookie, &value)
+		if err != nil {
+			value = map[string]string{
+				server.UserID: "userID",
+			}
+			encoded, err := s.Encode(server.UserID, value)
+			if err == nil {
+				c.Cookie(&fiber.Cookie{
+					Name:     server.UserID,
+					Value:    encoded,
+					HTTPOnly: true,
+				})
+			}
+		}
+
+		return c.SendStatus(http.StatusOK)
+	})
 
 	if err := env.Parse(&cfg); err != nil {
 		logrus.Errorf("Ошибка при парсинге переменных окружения: %v", err)
 	}
-
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -50,7 +92,7 @@ func main() {
 	if *baseURL == "" {
 		*baseURL = "http://localhost:8080"
 	}
-
+	//dbDSN = "host=localhost port=5432 dbname=postgres user=postgres password=postgres connect_timeout=10 sslmode=prefer"
 	cfg.Address = *address
 	cfg.BaseURL = *baseURL
 	cfg.FileStoragePath = *fileStoragePath
@@ -70,7 +112,7 @@ func main() {
 			logger.Fatalf("Failed to initialize database: %v", err)
 		}
 
-		server := server.NewServer(cfg, pool)
+		server := server.NewServer(cfg, pool, s)
 		logger.Infof("Запуск сервера на адресе %s", cfg.Address)
 
 		if err := server.Run(); err != nil {
@@ -78,7 +120,7 @@ func main() {
 		}
 	} else {
 		logger.Error("DATABASE_DSN environment variable and -d flag are not set, using internal storage")
-		server := server.NewServer(cfg, nil)
+		server := server.NewServer(cfg, nil, s)
 		logger.Infof("Запуск сервера на адресе %s", cfg.Address)
 
 		if err := server.Run(); err != nil {
