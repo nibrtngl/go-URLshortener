@@ -10,6 +10,7 @@ import (
 	"net/url"
 )
 
+// UserID значение ключа для идентификатора пользователя.
 const UserID = "userID"
 
 // ShortenURLHandler обрабатывает запросы на сокращение URL.

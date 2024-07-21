@@ -56,7 +56,6 @@ func (s *DatabaseStorage) GetURL(shortURL string, userID string) (models.URL, er
 }
 
 // SetURL добавляет новый URL в базу данных и возвращает сгенерированный ID.
-
 func (s *DatabaseStorage) SetURL(id, url string, userID string) (string, error) {
 	query := `
         INSERT INTO urls (short_url, original_url, user_id)
