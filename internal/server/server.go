@@ -103,13 +103,13 @@ func setupServerForTesting() *Server {
 }
 
 func (s *Server) setupRoutes() {
-	s.App.Post("/api/shorten", s.shortenAPIHandler)
-	s.App.Post("/", s.shortenURLHandler)
+	s.App.Post("/api/shorten", s.ShortenAPIHandler)
+	s.App.Post("/", s.ShortenURLHandler)
 	s.App.Get("/ping", s.PingHandler)
-	s.App.Get("/:id", s.redirectToOriginalURL)
-	s.App.Post("/api/shorten/batch", s.shortenBatchURLHandler)
-	s.App.Get("/api/user/urls", s.getUserURLsHandler)
-	s.App.Delete("/api/user/urls", s.deleteURLsHandler)
+	s.App.Get("/:id", s.RedirectToOriginalURL)
+	s.App.Post("/api/shorten/batch", s.ShortenBatchURLHandler)
+	s.App.Get("/api/user/urls", s.GetUserURLsHandler)
+	s.App.Delete("/api/user/urls", s.DeleteURLsHandler)
 }
 
 func (s *Server) Run() error {

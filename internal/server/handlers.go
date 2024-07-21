@@ -12,8 +12,8 @@ import (
 
 const UserID = "userID"
 
-// shortenURLHandler обрабатывает запросы на сокращение URL.
-func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
+// ShortenURLHandler обрабатывает запросы на сокращение URL.
+func (s *Server) ShortenURLHandler(c *fiber.Ctx) error {
 	originalURL := c.Body()
 	userID := c.Cookies(UserID)
 	if s.CookieHandler == nil {
@@ -57,8 +57,8 @@ func (s *Server) shortenURLHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).SendString(shortURL)
 }
 
-// redirectToOriginalURL перенаправляет запросы на оригинальный URL.
-func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
+// RedirectToOriginalURL перенаправляет запросы на оригинальный URL.
+func (s *Server) RedirectToOriginalURL(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userID := c.Cookies(UserID)
 	urlData, err := s.Storage.GetURL(id, userID)
@@ -95,8 +95,8 @@ func (s *Server) redirectToOriginalURL(c *fiber.Ctx) error {
 	}
 }
 
-// shortenAPIHandler обрабатывает API-запросы на сокращение URL.
-func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
+// ShortenAPIHandler обрабатывает API-запросы на сокращение URL.
+func (s *Server) ShortenAPIHandler(c *fiber.Ctx) error {
 
 	var req models.ShortenRequest
 	if s.CookieHandler == nil {
@@ -152,8 +152,8 @@ func (s *Server) shortenAPIHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(resp)
 }
 
-// getUserURLsHandler обрабатывает запросы на получение всех URL пользователя.
-func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
+// GetUserURLsHandler обрабатывает запросы на получение всех URL пользователя.
+func (s *Server) GetUserURLsHandler(c *fiber.Ctx) error {
 	userID := c.Cookies(UserID)
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
@@ -185,8 +185,8 @@ func (s *Server) getUserURLsHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(response)
 }
 
-// deleteURLsHandler обрабатывает запросы на удаление URL.
-func (s *Server) deleteURLsHandler(c *fiber.Ctx) error {
+// DeleteURLsHandler обрабатывает запросы на удаление URL.
+func (s *Server) DeleteURLsHandler(c *fiber.Ctx) error {
 	var ids []string
 	if err := json.Unmarshal(c.Body(), &ids); err != nil {
 		errResponse := models.ErrorResponse{
@@ -203,7 +203,7 @@ func (s *Server) deleteURLsHandler(c *fiber.Ctx) error {
 	return c.Status(http.StatusAccepted).SendString("Accepted")
 }
 
-func (s *Server) shortenBatchURLHandler(c *fiber.Ctx) error {
+func (s *Server) ShortenBatchURLHandler(c *fiber.Ctx) error {
 	if s.CookieHandler == nil {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	}
