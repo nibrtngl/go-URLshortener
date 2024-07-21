@@ -5,12 +5,14 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+// NoOsExitInMainAnalyzer кастомный чекер
 var NoOsExitInMainAnalyzer = &analysis.Analyzer{
 	Name: "noOsExitInMain",
 	Doc:  "Checks if os.Exit is called directly in main function",
 	Run:  Run,
 }
 
+// Run проверяет, вызывается ли os.Exit напрямую в функции main
 func Run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {

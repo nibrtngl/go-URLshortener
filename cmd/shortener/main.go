@@ -18,6 +18,7 @@ import (
 )
 
 func main() {
+
 	var cfg models.Config
 	var (
 		hashKey  = []byte("very-secret")
