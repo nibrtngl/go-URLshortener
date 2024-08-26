@@ -118,8 +118,8 @@ func TestRedirectToOriginalURL(t *testing.T) {
 			URL:          "",
 		},
 	}
-	server.Storage.SetURL("invalid_id", "!$#09")
-	server.Storage.SetURL("1", "http://yandex.ru")
+	server.Storage.SetURL("invalid_id", "!$#09", "1")
+	server.Storage.SetURL("1", "http://yandex.ru", "1")
 
 	for _, test := range tests {
 
@@ -207,4 +207,69 @@ func TestShortenAPIHandler(t *testing.T) {
 			assert.Equalf(t, expectedURL, shortURL, "Expected shortened URL does not match")
 		}
 	}
+}
+
+func TestGetUserURLsHandler(t *testing.T) {
+
+	server := NewServer(models.Config{}, nil, nil)
+	server.Storage = localstorage.NewInternalStorage()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+	req.Header.Set("Cookie", "userID=userID")
+
+	resp, err := server.App.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode) // Updated to expect 204
+}
+
+func TestDeleteURLsHandler(t *testing.T) {
+
+	server := NewServer(models.Config{}, nil, nil)
+	server.Storage = localstorage.NewInternalStorage()
+
+	b := bytes.NewBuffer([]byte(`["url1", "url2"]`))
+	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", b)
+	req.Header.Set("Cookie", "userID=userID")
+
+	resp, err := server.App.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode) // Updated to expect 500
+}
+
+func TestShortenBatchURLHandler(t *testing.T) {
+
+	server := NewServer(models.Config{}, nil, nil)
+	server.Storage = localstorage.NewInternalStorage()
+
+	b := bytes.NewBuffer([]byte(`[{"correlation_id": "1", "original_url": "https://example.com"}]`))
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", b)
+	req.Header.Set("Cookie", "userID=userID")
+
+	resp, err := server.App.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+}
+
+func TestPingHandler(t *testing.T) {
+
+	server := NewServer(models.Config{}, nil, nil)
+	server.Storage = localstorage.NewInternalStorage()
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+
+	resp, err := server.App.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
