@@ -3,7 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fiber-apis/internal/models"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -19,7 +19,7 @@ func LoadConfigFromFile(filePath string) (*models.Config, error) {
 	defer file.Close()
 
 	// Читаем содержимое файла
-	bytes, err := ioutil.ReadAll(file)
+	bytes, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
