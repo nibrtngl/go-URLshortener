@@ -18,7 +18,7 @@ func LoadConfigFromFile(filePath string) (*models.Config, error) {
 	}
 	defer file.Close()
 
-	// Читаем содержимое файла
+	// Читаем содержимое файл
 	bytes, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
