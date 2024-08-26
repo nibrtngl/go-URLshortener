@@ -53,4 +53,5 @@ type Config struct {
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"./tmp/short-url-db.json"`
 	DatabaseDSN     string `env:"DATABASE_DSN" envDefault:""`
+	EnableHTTPS     bool   `json:"enable_https"`
 }

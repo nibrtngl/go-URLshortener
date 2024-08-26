@@ -5,7 +5,6 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-// NoOsExitInMainAnalyzer кастомный чекер
 var NoOsExitInMainAnalyzer = &analysis.Analyzer{
 	Name: "noOsExitInMain",
 	Doc:  "Checks if os.Exit is called directly in main function",

@@ -118,6 +118,10 @@ func (s *Server) setupRoutes() {
 	s.App.Delete("/api/user/urls", s.DeleteURLsHandler)
 }
 
+func (s *Server) RunTLS(certFile, keyFile string) error {
+	return s.App.ListenTLS(s.Cfg.Address, certFile, keyFile)
+}
+
 // Run запускает сервер.
 func (s *Server) Run() error {
 	s.setupRoutes()

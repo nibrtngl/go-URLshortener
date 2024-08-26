@@ -132,3 +132,19 @@ func (f *fiberLogger) Write(p []byte) (n int, err error) {
 	f.logger.Info(string(p))
 	return len(p), nil
 }
+
+func LoadConfigFromFile(filePath string) (*models.Config, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	config := &models.Config{}
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(config); err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
