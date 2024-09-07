@@ -14,26 +14,17 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
 func main() {
 	var configFilePath string
+	var buildVersion, buildDate, buildCommit string
 
-	var buildVersion string
-	var buildDate string
-	var buildCommit string
-
-	if buildVersion == "" {
-		buildVersion = "N/A"
-	}
-	if buildDate == "" {
-		buildDate = "N/A"
-	}
-	if buildCommit == "" {
-		buildCommit = "N/A"
-	}
-
+	// Print build information
 	fmt.Printf("Build version: %s\n", buildVersion)
 	fmt.Printf("Build date: %s\n", buildDate)
 	fmt.Printf("Build commit: %s\n", buildCommit)
@@ -50,7 +41,7 @@ func main() {
 	keyFile := flag.String("key", "", "Path to SSL key")
 	flag.Parse()
 
-	// Загрузка конфигурации из файла, если указан
+	// Load config from file if provided
 	if configFilePath != "" {
 		fileCfg, err := config.LoadConfigFromFile(configFilePath)
 		if err != nil {
@@ -59,12 +50,12 @@ func main() {
 		cfg = *fileCfg
 	}
 
-	// Перегружаем переменные окружения
+	// Parse environment variables
 	if err := env.Parse(&cfg); err != nil {
-		logrus.Errorf("Ошибка при парсинге переменных окружения: %v", err)
+		logrus.Errorf("Error parsing environment variables: %v", err)
 	}
 
-	// Перегружаем значения из флагов командной строки
+	// Override with command-line flags
 	if *address != "" {
 		cfg.Address = *address
 	}
@@ -81,25 +72,19 @@ func main() {
 		cfg.EnableHTTPS = true
 	}
 
-	// Логгер
+	// Logger
 	logger := logrus.New()
-	logger.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: true,
-	})
+	logger.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
 	logger.SetLevel(logrus.InfoLevel)
 
-	// Профайлинг через pprof
+	// pprof for profiling
 	go func() {
 		pprofMux := http.NewServeMux()
 		pprofMux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-		pprofMux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		pprofMux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-		pprofMux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		pprofMux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 		http.ListenAndServe("localhost:6060", pprofMux)
 	}()
 
-	// Инициализация базы данных
+	// Initialize database connection
 	var pool *pgxpool.Pool
 	var err error
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -119,22 +104,46 @@ func main() {
 		logger.Info("DATABASE_DSN is not set, using internal storage")
 	}
 
-	// Инициализация сервера
+	// Initialize server
 	secureCookie := securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	srv := server.NewServer(cfg, pool, secureCookie)
 
-	// Запуск сервера
-	logger.Infof("Запуск сервера на адресе %s", cfg.Address)
-	if cfg.EnableHTTPS {
-		if *certFile == "" || *keyFile == "" {
-			logger.Fatal("Both cert and key file must be specified for HTTPS")
+	// Signal handling for graceful shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	// Start server in a goroutine
+	go func() {
+		logger.Infof("Starting server on %s", cfg.Address)
+		if cfg.EnableHTTPS {
+			if *certFile == "" || *keyFile == "" {
+				logger.Fatal("Both cert and key files must be specified for HTTPS")
+			}
+			if err := srv.RunTLS(*certFile, *keyFile); err != nil {
+				logger.Fatalf("Failed to start HTTPS server: %v", err)
+			}
+		} else {
+			if err := srv.Run(); err != nil {
+				logger.Fatalf("Failed to start server: %v", err)
+			}
 		}
-		if err := srv.RunTLS(*certFile, *keyFile); err != nil {
-			logger.Fatalf("Ошибка запуска HTTPS сервера: %v", err)
-		}
-	} else {
-		if err := srv.Run(); err != nil {
-			logger.Fatalf("Ошибка запуска сервера: %v", err)
+	}()
+
+	// Wait for interrupt signal
+	<-stop
+	logger.Info("Shutdown signal received, shutting down server...")
+
+	// Graceful shutdown
+	if err := srv.App.Shutdown(); err != nil {
+		logger.Fatalf("Error during server shutdown: %v", err)
+	}
+
+	// Save data to storage if necessary
+	if cfg.FileStoragePath != "" {
+		if err := srv.SaveData(cfg.FileStoragePath); err != nil {
+			logger.Errorf("Error saving data to file: %v", err)
 		}
 	}
+
+	logger.Info("Server stopped gracefully")
 }

@@ -20,6 +20,8 @@ type Storable interface {
 	GetAllKeys() ([]string, error)
 	GetUserURLs(userID string) ([]models.URL, error)
 	Ping() error
+	SaveToFile(filePath string) error
+	LoadFromFile(filePath string) error
 }
 
 // Server представляет структуру сервера.
@@ -42,6 +44,7 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 	} else {
 		storage = localstorage.NewInternalStorage()
 	}
+
 	if cfg.FileStoragePath == "" {
 		fileStoragePath := os.Getenv("FILE_STORAGE_PATH")
 		if fileStoragePath != "" {
@@ -68,14 +71,15 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 		CookieHandler:  cookieHandler,
 	}
 
-	server.setupRoutes()
-
+	// Загрузка данных из файла
 	if _, err := os.Stat(cfg.FileStoragePath); !os.IsNotExist(err) {
-		err := server.loadStorageFromFile(cfg.FileStoragePath)
+		err := server.Storage.LoadFromFile(cfg.FileStoragePath)
 		if err != nil {
 			logger.Errorf("Failed to load storage from file: %v", err)
 		}
 	}
+
+	server.setupRoutes()
 
 	return server
 }
@@ -83,6 +87,18 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 // Valid проверяет, является ли пользователь действительным.
 func (s *Server) Valid(userID string) bool {
 	return userID != ""
+}
+
+func (s *Server) SaveData(path string) error {
+	if path != "" {
+		err := s.Storage.SaveToFile(path)
+		if err != nil {
+			s.Logger.Errorf("Failed to save storage to file: %v", err)
+			return err
+		}
+		s.Logger.Infof("Data successfully saved to %s", path)
+	}
+	return nil
 }
 
 // setupServerForTesting тестирует сервер.

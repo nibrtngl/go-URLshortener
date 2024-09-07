@@ -25,6 +25,18 @@ func InitDB(pool *pgxpool.Pool) error {
 	return err
 }
 
+// SaveToFile не используется в базе данных, поэтому возвращает nil.
+func (s *DatabaseStorage) SaveToFile(path string) error {
+	// В случае работы с БД, обычно данные хранятся напрямую в БД, так что сохранять их в файл не требуется.
+	return nil
+}
+
+// LoadFromFile не используется в базе данных, поэтому возвращает nil.
+func (s *DatabaseStorage) LoadFromFile(path string) error {
+	// Загрузка данных из файла не требуется для БД.
+	return nil
+}
+
 // DatabaseStorage представляет собой структуру, которая представляет хранилище базы данных.
 type DatabaseStorage struct {
 	pool *pgxpool.Pool
