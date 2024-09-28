@@ -154,7 +154,8 @@ func main() {
 				logger.Fatalf("Failed to listen on gRPC port: %v", err)
 			}
 
-			grpcServer, err := grpc.GetGRPCServer(cfg, make(chan []string), storage) // Передаем storage вместо pool
+			// Передаем экземпляр srv в gRPC сервер
+			grpcServer, err := grpc.GetGRPCServer(cfg, make(chan []string), storage, srv)
 			if err != nil {
 				logger.Fatalf("Failed to initialize gRPC server: %v", err)
 			}
