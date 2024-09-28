@@ -117,8 +117,6 @@ func main() {
 	var storage server.Storable
 	if cfg.DatabaseDSN != "" {
 		storage = db.NewDatabaseStorage(pool)
-	} else {
-		// Инициализируйте другой тип хранилища, если необходимо
 	}
 
 	// Initialize HTTP server
