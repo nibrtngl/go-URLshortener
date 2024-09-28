@@ -17,7 +17,7 @@ type ShortenerServer struct {
 	storage       server.Storable
 	cfg           models.Config
 	chanForDelete chan []string
-	server        *server.Server // Добавляем поле для структуры Server
+	server        *server.Server
 }
 
 // Метод для создания короткого URL
@@ -96,7 +96,6 @@ func (s *ShortenerServer) GetUserURLs(ctx context.Context, in *GetUserURLsReques
 		return nil, errors.New("failed to get user URLs")
 	}
 
-	// Формирование ответа
 	for _, url := range urls {
 		res.Urls = append(res.Urls, &URL{
 			ShortUrl:    s.cfg.BaseURL + url.ShortURL,
@@ -107,7 +106,6 @@ func (s *ShortenerServer) GetUserURLs(ctx context.Context, in *GetUserURLsReques
 	return res, nil
 }
 
-// Interceptor для добавления/проверки userID в метаданных gRPC
 func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	var user string
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
@@ -125,7 +123,6 @@ func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServ
 	return handler(ctx, req)
 }
 
-// Функция для получения userID из контекста
 func getUser(ctx context.Context) string {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
@@ -144,7 +141,7 @@ func GetGRPCServer(cfg models.Config, ch4delete chan []string, store server.Stor
 		storage:       store,
 		cfg:           cfg,
 		chanForDelete: ch4delete,
-		server:        srv, // Передаем экземпляр структуры Server
+		server:        srv,
 	}
 
 	RegisterURLShortenerServer(grpcServer, server)
