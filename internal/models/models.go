@@ -9,6 +9,7 @@ type URL struct {
 	ShortURL    string
 	OriginalURL string
 	IsDeleted   bool
+	UserID      string `json:"user_id"`
 }
 
 // RespPair представляет собой структуру, которая представляет пару ответов.
@@ -54,4 +55,5 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"./tmp/short-url-db.json"`
 	DatabaseDSN     string `env:"DATABASE_DSN" envDefault:""`
 	EnableHTTPS     bool   `json:"enable_https"`
+	TrustedSubnet   string `json:"trusted_subnet"`
 }

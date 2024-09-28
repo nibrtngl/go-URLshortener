@@ -11,13 +11,13 @@ import (
 )
 
 // IsValidURL проверяет, является ли URL допустимым.
-func isValidURL(url1 string) bool {
+func IsValidURL(url1 string) bool {
 	_, err := url.ParseRequestURI(url1)
 	return err == nil
 }
 
 // generateShortID генерирует короткий идентификатор.
-func generateShortID() string {
+func GenerateShortID() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY0123456789"
 	idLength := 8
 	b := make([]byte, idLength)
@@ -29,8 +29,8 @@ func generateShortID() string {
 	return string(b)
 }
 
-// generateUserID генерирует идентификатор пользователя.
-func generateUserID() string {
+// GenerateUserID генерирует идентификатор пользователя.
+func GenerateUserID() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	idLength := 10
 	b := make([]byte, idLength)
@@ -42,8 +42,8 @@ func generateUserID() string {
 	return string(b)
 }
 
-// saveStorageToFile сохраняет хранилище в файл.
-func (s *Server) saveStorageToFile(filePath string) error {
+// SaveStorageToFile сохраняет хранилище в файл.
+func (s *Server) SaveStorageToFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
@@ -89,7 +89,7 @@ func (s *Server) saveStorageToFile(filePath string) error {
 }
 
 // loadStorageFromFile загружает хранилище из файла.
-func (s *Server) loadStorageFromFile(filePath string) error {
+func (s *Server) LoadStorageFromFile(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err

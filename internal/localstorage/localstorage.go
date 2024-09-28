@@ -7,6 +7,20 @@ import (
 	"os"
 )
 
+// GetURLsCount возвращает количество сокращенных URL в внутреннем хранилище.
+func (s *InternalStorage) GetURLsCount() (int, error) {
+	return len(s.urls), nil
+}
+
+// GetUsersCount возвращает количество уникальных пользователей в внутреннем хранилище.
+func (s *InternalStorage) GetUsersCount() (int, error) {
+	userIDs := make(map[string]struct{})
+	for _, url := range s.urls {
+		userIDs[url.UserID] = struct{}{}
+	}
+	return len(userIDs), nil
+}
+
 // InternalStorage представляет собой структуру, которая представляет простое внутреннее хранилище для URL-адресов.
 type InternalStorage struct {
 	urls map[string]models.URL

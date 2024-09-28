@@ -21,7 +21,7 @@ func (s *Server) ShortenURLHandler(c *fiber.Ctx) error {
 		s.CookieHandler = securecookie.New([]byte("very-secret"), []byte("a-lot-secret"))
 	}
 	if userID == "" || !s.Valid(userID) {
-		userID = generateUserID()
+		userID = GenerateUserID()
 		value := map[string]string{
 			UserID: userID,
 		}
@@ -35,11 +35,11 @@ func (s *Server) ShortenURLHandler(c *fiber.Ctx) error {
 		}
 	}
 
-	if !isValidURL(string(originalURL)) {
+	if !IsValidURL(string(originalURL)) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
-	id := generateShortID()
+	id := GenerateShortID()
 
 	dbid, err := s.Storage.SetURL(id, string(originalURL), userID)
 	c.Cookie(&fiber.Cookie{Name: UserID, Value: userID})
@@ -50,7 +50,7 @@ func (s *Server) ShortenURLHandler(c *fiber.Ctx) error {
 	if dbid != id {
 		return c.Status(http.StatusConflict).SendString(shortURL)
 	}
-	err = s.saveStorageToFile(s.Cfg.FileStoragePath)
+	err = s.SaveStorageToFile(s.Cfg.FileStoragePath)
 	if err != nil {
 		logrus.Errorf("Failed to save storage to file: %v", err)
 	}
@@ -88,7 +88,7 @@ func (s *Server) RedirectToOriginalURL(c *fiber.Ctx) error {
 		c.Cookie(&fiber.Cookie{Name: UserID, Value: userID})
 	}
 	originalURL := urlData.OriginalURL // Access the OriginalURL field of the models.URL struct
-	if !isValidURL(originalURL) {
+	if !IsValidURL(originalURL) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	} else {
 		c.Set("Location", originalURL)
@@ -127,11 +127,11 @@ func (s *Server) ShortenAPIHandler(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(errResponse)
 	}
 
-	if !isValidURL(req.URL) {
+	if !IsValidURL(req.URL) {
 		return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 	}
 
-	id := generateShortID()
+	id := GenerateShortID()
 	dbid, err := s.Storage.SetURL(id, req.URL, c.Cookies(UserID))
 
 	shortURL, _ := url.JoinPath(s.ShortURLPrefix, dbid)
@@ -236,11 +236,11 @@ func (s *Server) ShortenBatchURLHandler(c *fiber.Ctx) error {
 
 	var resp []models.BatchShortenResponse
 	for _, item := range req {
-		if !isValidURL(item.OriginalURL) {
+		if !IsValidURL(item.OriginalURL) {
 			return c.Status(http.StatusBadRequest).SendString("Bad Request: Invalid URL format")
 		}
 
-		id := generateShortID()
+		id := GenerateShortID()
 		s.Storage.SetURL(id, item.OriginalURL, c.Cookies(UserID))
 
 		shortURL, _ := url.JoinPath(s.ShortURLPrefix, id)

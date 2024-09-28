@@ -9,6 +9,28 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+// GetURLsCount возвращает количество сокращенных URL в базе данных.
+func (s *DatabaseStorage) GetURLsCount() (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM urls WHERE is_deleted = false"
+	err := s.pool.QueryRow(context.Background(), query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get URLs count: %v", err)
+	}
+	return count, nil
+}
+
+// GetUsersCount возвращает количество уникальных пользователей в базе данных.
+func (s *DatabaseStorage) GetUsersCount() (int, error) {
+	var count int
+	query := "SELECT COUNT(DISTINCT user_id) FROM urls WHERE is_deleted = false"
+	err := s.pool.QueryRow(context.Background(), query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get users count: %v", err)
+	}
+	return count, nil
+}
+
 // InitDB инициализирует базу данных, создавая необходимые таблицы.
 func InitDB(pool *pgxpool.Pool) error {
 	_, err := pool.Exec(context.Background(), `

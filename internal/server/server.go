@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
+	"net"
 	"os"
 )
 
@@ -22,6 +23,8 @@ type Storable interface {
 	Ping() error
 	SaveToFile(filePath string) error
 	LoadFromFile(filePath string) error
+	GetURLsCount() (int, error)
+	GetUsersCount() (int, error)
 }
 
 // Server представляет структуру сервера.
@@ -84,6 +87,30 @@ func NewServer(cfg models.Config, pool *pgxpool.Pool, cookieHandler *securecooki
 	return server
 }
 
+func (s *Server) StatsHandler(c *fiber.Ctx) error {
+	// Проверка на доверенный IP
+	realIP := c.Get("X-Real-IP")
+	if !s.isIPTrusted(realIP) {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Forbidden"})
+	}
+
+	// Получение статистики
+	urlsCount, err := s.Storage.GetURLsCount()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get stats"})
+	}
+
+	usersCount, err := s.Storage.GetUsersCount()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get stats"})
+	}
+
+	return c.JSON(fiber.Map{
+		"urls":  urlsCount,
+		"users": usersCount,
+	})
+}
+
 // Valid проверяет, является ли пользователь действительным.
 func (s *Server) Valid(userID string) bool {
 	return userID != ""
@@ -99,6 +126,18 @@ func (s *Server) SaveData(path string) error {
 		s.Logger.Infof("Data successfully saved to %s", path)
 	}
 	return nil
+}
+
+func (s *Server) isIPTrusted(ip string) bool {
+	if s.Cfg.TrustedSubnet == "" {
+		return false
+	}
+	_, subnet, err := net.ParseCIDR(s.Cfg.TrustedSubnet)
+	if err != nil {
+		return false
+	}
+	clientIP := net.ParseIP(ip)
+	return subnet.Contains(clientIP)
 }
 
 // setupServerForTesting тестирует сервер.
@@ -132,6 +171,8 @@ func (s *Server) setupRoutes() {
 	s.App.Post("/api/shorten/batch", s.ShortenBatchURLHandler)
 	s.App.Get("/api/user/urls", s.GetUserURLsHandler)
 	s.App.Delete("/api/user/urls", s.DeleteURLsHandler)
+	s.App.Get("/api/internal/stats", s.StatsHandler)
+
 }
 
 func (s *Server) RunTLS(certFile, keyFile string) error {
@@ -143,7 +184,7 @@ func (s *Server) Run() error {
 	s.setupRoutes()
 
 	if s.Cfg.FileStoragePath != "" {
-		err := s.saveStorageToFile(s.Cfg.FileStoragePath)
+		err := s.SaveStorageToFile(s.Cfg.FileStoragePath)
 		if err != nil {
 			s.Logger.Errorf("Failed to save storage to file: %v", err)
 		}
