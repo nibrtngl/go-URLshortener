@@ -17,6 +17,7 @@ type ShortenerServer struct {
 	storage       server.Storable
 	cfg           models.Config
 	chanForDelete chan []string
+	server        *server.Server // Добавляем поле для структуры Server
 }
 
 // Метод для создания короткого URL
@@ -50,8 +51,8 @@ func (s *ShortenerServer) CreateShortURL(ctx context.Context, in *CreateShortURL
 		return nil, errors.New("conflict: URL already exists")
 	}
 
-	// Сохранение данных в файлf
-	if err = server.SaveStorageToFile(s.cfg.FileStoragePath, s.storage); err != nil {
+	// Сохранение данных в файл через объект Server
+	if err = s.server.SaveStorageToFile(s.cfg.FileStoragePath); err != nil {
 		logrus.Errorf("failed to save storage to file: %v", err)
 		return nil, err
 	}
@@ -136,13 +137,14 @@ func getUser(ctx context.Context) string {
 }
 
 // GetGRPCServer создает и возвращает gRPC сервер
-func GetGRPCServer(cfg models.Config, ch4delete chan []string, store server.Storable) (*grpc.Server, error) {
+func GetGRPCServer(cfg models.Config, ch4delete chan []string, store server.Storable, srv *server.Server) (*grpc.Server, error) {
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(unaryInterceptor))
 
 	server := &ShortenerServer{
 		storage:       store,
 		cfg:           cfg,
 		chanForDelete: ch4delete,
+		server:        srv, // Передаем экземпляр структуры Server
 	}
 
 	RegisterURLShortenerServer(grpcServer, server)
