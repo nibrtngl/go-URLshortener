@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "/";
+// Сервис gRPC
+service URLShortener {
+  rpc CreateShortURL(CreateShortURLRequest) returns (CreateShortURLResponse);
+  rpc GetOriginalURL(GetOriginalURLRequest) returns (GetOriginalURLResponse);
+  rpc GetUserURLs(GetUserURLsRequest) returns (GetUserURLsResponse);
+}
+
+// Сообщения
+message CreateShortURLRequest {
+  string original_url = 1;
+  string user_id = 2;
+}
+
+message CreateShortURLResponse {
+  string short_url = 1;
+}
+
+message GetOriginalURLRequest {
+  string short_url = 1;
+  string user_id = 2;
+}
+
+message GetOriginalURLResponse {
+  string original_url = 1;
+}
+
+message GetUserURLsRequest {
+  string user_id = 1;
+}
+
+message GetUserURLsResponse {
+  repeated URL urls = 1;
+}
+
+message URL {
+  string short_url = 1;
+  string original_url = 2;
+}
