@@ -1,7 +1,6 @@
 module fiber-apis
 
-go 1.23.0
-
+go 1.22.0
 
 require (
 	github.com/caarlos0/env/v10 v10.0.0
@@ -11,7 +10,6 @@ require (
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/tools v0.25.0
 	google.golang.org/grpc v1.67.0
 	google.golang.org/protobuf v1.34.2
 )
